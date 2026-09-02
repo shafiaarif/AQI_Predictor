@@ -1,5 +1,12 @@
 .venv/
-venv/
+
+.env
+
+data/*.csv
+
+saved_models/fs70/random_forest/
+saved_models/fs70/ridge/
+saved_models/fs70/xgboost/
+
 __pycache__/
 *.pyc
-.env
