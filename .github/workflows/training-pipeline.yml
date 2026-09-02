@@ -2,7 +2,7 @@ name: Training Pipeline
 
 on:
   schedule:
-    - cron: "0 2 * * *"    # daily 2 AM UTC
+    - cron: "0 2 * * 0"    # weekly, Sunday 2 AM UTC (full retraining is heavy)
   workflow_dispatch:
 
 jobs:
@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -28,4 +28,4 @@ jobs:
       - name: Register best model
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
-        run: python model_training/register_model.py
+        run: python register_model.py
