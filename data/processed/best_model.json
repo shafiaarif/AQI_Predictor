@@ -1,0 +1,31 @@
+{
+  "feature_set": "FS70",
+  "model": "Ensemble (CatBoost + NN)",
+  "mean_rmse": 6.501313351603128,
+  "mean_mae": 5.073931529705497,
+  "mean_r2": 0.4674756676741721,
+  "per_horizon": {
+    "target_change_24": {
+      "rmse": 4.639282638484448,
+      "mae": 3.6193771715827134,
+      "r2": 0.7252018524887127
+    },
+    "target_change_48": {
+      "rmse": 6.718323186878094,
+      "mae": 5.182655759484491,
+      "r2": 0.44986691806239876
+    },
+    "target_change_72": {
+      "rmse": 8.146334229446841,
+      "mae": 6.4197616580492864,
+      "r2": 0.22735823247140508
+    }
+  },
+  "test_period": {
+    "start": "2026-06-29 21:00:00+00:00",
+    "end": "2026-08-28 21:00:00+00:00"
+  },
+  "feature_selection": "Leakage-safe selection using data before the final 90-day period.",
+  "prediction_mode": "change",
+  "reconstruction": "predicted_aqi = current_us_aqi + predicted_change"
+}

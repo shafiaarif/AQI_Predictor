@@ -1,0 +1,16 @@
+{
+  "feature_set": "FS90",
+  "type": "weighted_average",
+  "models": [
+    {
+      "name": "catboost",
+      "weight": 0.5
+    },
+    {
+      "name": "neural_network",
+      "weight": 0.5
+    }
+  ],
+  "prediction_mode": "change",
+  "reconstruction": "predicted_aqi = current_us_aqi + weighted_average_predicted_change"
+}

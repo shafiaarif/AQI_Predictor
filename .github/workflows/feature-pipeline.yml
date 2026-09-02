@@ -1,0 +1,42 @@
+name: Feature Pipeline
+
+on:
+  schedule:
+    - cron: "0 * * * *"    # har ghante chalega
+  workflow_dispatch:        # manual "Run workflow" button ke liye bhi
+
+jobs:
+  run-feature-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch raw data
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+        run: python feature_pipeline/fetch_data.py
+
+      - name: Feature engineering
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+        run: python feature_pipeline/feature_engineering.py
+
+      - name: Preprocess
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+        run: python feature_pipeline/preprocess.py
+
+      - name: Validate features
+        env:
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+        run: python feature_pipeline/validate_features.py
