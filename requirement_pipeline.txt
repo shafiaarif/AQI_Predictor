@@ -1,0 +1,17 @@
+# Feature pipeline + training pipeline dependencies.
+# Used explicitly by .github/workflows/feature-pipeline.yml and
+# training-pipeline.yml (NOT the Streamlit Cloud dashboard — that uses the
+# root requirements.txt, which deliberately excludes hopsworks to avoid the
+# protobuf version conflict with streamlit).
+
+hopsworks==5.0.6
+pandas==2.3.3
+numpy==2.4.6
+scikit-learn==1.9.0
+catboost==1.2.10
+xgboost
+tensorflow==2.21.0
+joblib==1.6.0
+requests==2.34.2
+python-dateutil==2.9.0.post0
+pytz==2026.3.post1
