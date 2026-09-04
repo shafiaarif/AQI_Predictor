@@ -18,7 +18,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -r requirements-pipeline.txt
+        run: pip install -r requirement_pipeline.txt
 
       - name: Fetch raw data
         env:
