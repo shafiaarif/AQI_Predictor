@@ -15,7 +15,7 @@
 
 hopsworks==5.0.6
 pandas==2.3.3
-numpy==2.4.6
+numpy==1.26.4
 scikit-learn==1.9.0
 catboost==1.2.10
 xgboost
