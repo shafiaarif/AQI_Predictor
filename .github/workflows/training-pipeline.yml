@@ -2,12 +2,13 @@ name: Training Pipeline
 
 on:
   schedule:
-    - cron: "0 2 * * 0"    # weekly, Sunday 2 AM UTC (full retraining is heavy)
+    - cron: "0 2 * * 0"
   workflow_dispatch:
 
 jobs:
   run-training-pipeline:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -23,9 +24,11 @@ jobs:
       - name: Run training pipeline
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
         run: python model_training/train_model.py
 
       - name: Register best model
         env:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
         run: python register_model.py
