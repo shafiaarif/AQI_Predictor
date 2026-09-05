@@ -2,7 +2,6 @@
 
 .env
 
-data/*.csv
 
 saved_models/fs70/random_forest/
 saved_models/fs70/ridge/
