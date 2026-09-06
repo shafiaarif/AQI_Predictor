@@ -73,8 +73,7 @@ Best feature set: **FS70**, Best model: **Ensemble (CatBoost + Neural Network)**
 | 72h     | 8.15 | 6.42 | 0.2274 |
 | **Avg** | **6.50** | **5.07** | **0.4675** |
 
-Baseline (persistence) comparison: avg RMSE 9.15, R² -0.063 — model persistence
-baseline se significantly behtar hai, especially 48h/72h horizons par.
+Baseline (persistence) comparison: avg RMSE 9.15, R² -0.063 — significantly better than model persistence baseline, especially for 48h/72h horizons.
 
 ## How to Run
 
