@@ -123,9 +123,8 @@ FORECAST_WEATHER_URL = (
     f"&longitude={LONGITUDE}"
     f"&hourly={WEATHER_HOURLY_VARS}"
     "&timezone=auto"
-    "&past_days=3"
+    "&past_days=92"
 )
-
 
 # ============================================================
 # FORECAST AIR QUALITY API
@@ -137,7 +136,7 @@ FORECAST_AQ_URL = (
     f"&longitude={LONGITUDE}"
     f"&hourly={AQ_HOURLY_VARS}"
     "&timezone=auto"
-    "&past_days=3" 
+    "&past_days=92" 
 )
 
 
