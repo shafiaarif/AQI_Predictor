@@ -1,21 +1,3 @@
-"""
-app.py
-------
-Karachi AQI Predictor dashboard — dark theme version.
-
-Features:
-- Pure black dashboard background
-- Gradient hero card for current AQI
-- Custom-styled forecast cards (24h/48h/72h)
-- Interactive Plotly line chart with colored AQI zone bands
-- Plotly-based SHAP feature importance chart
-- Styled hazard alert banner
-- Last-updated timestamp + manual refresh
-
-Run:
-    streamlit run app.py
-"""
-
 from datetime import datetime
 
 import numpy as np
@@ -34,20 +16,14 @@ from predict import (
     HORIZONS,
 )
 
-# ============================================================
 # PAGE CONFIG
-# ============================================================
-
 st.set_page_config(
     page_title="Karachi AQI Predictor",
     page_icon="🌫️",
     layout="centered",
 )
 
-# ============================================================
 # CUSTOM DARK CSS
-# ============================================================
-
 st.markdown(
     """
     <style>
@@ -352,11 +328,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-# ============================================================
-# HELPERS
-# ============================================================
-
 def aqi_style(aqi: float):
     """Return (label, solid_color, gradient_css, emoji) for a given AQI value."""
 
@@ -408,10 +379,7 @@ def aqi_style(aqi: float):
             "⚫",
         )
 
-
-# ============================================================
 # LOAD + CACHE
-# ============================================================
 
 @st.cache_resource(show_spinner=False)
 def load_everything():
@@ -445,11 +413,7 @@ def run_forecast():
         datetime.now().strftime("%d %b %Y, %I:%M %p"),
     )
 
-
-# ============================================================
 # HEADER
-# ============================================================
-
 st.markdown(
     '<div class="app-title">🌫️ Karachi AQI Predictor</div>',
     unsafe_allow_html=True,
@@ -462,10 +426,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-# ============================================================
 # RUN FORECAST
-# ============================================================
 
 with st.spinner("Building live features and running predictions..."):
 
@@ -473,10 +434,6 @@ with st.spinner("Building live features and running predictions..."):
 
     _, models = load_everything()
 
-
-# ============================================================
-# HERO CARD
-# ============================================================
 
 current_aqi = forecast["current_aqi"]
 
@@ -492,10 +449,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-# ============================================================
 # FORECAST CARDS
-# ============================================================
 
 st.markdown(
     '<div class="section-title">📈 3-Day Forecast</div>',
@@ -542,10 +496,7 @@ for i, h in enumerate(HORIZONS):
             unsafe_allow_html=True,
         )
 
-
-# ============================================================
 # FORECAST TREND
-# ============================================================
 
 st.markdown(
     '<div class="section-title">Forecast Trend</div>',
@@ -562,11 +513,6 @@ y_values = [
 ]
 
 fig = go.Figure()
-
-
-# ------------------------------------------------------------
-# AQI ZONE BANDS
-# ------------------------------------------------------------
 
 zone_bands = [
     (0, 50, "rgba(34,197,94,0.08)"),
@@ -588,11 +534,7 @@ for lo, hi, color in zone_bands:
             line_width=0,
         )
 
-
-# ------------------------------------------------------------
 # FORECAST LINE
-# ------------------------------------------------------------
-
 fig.add_trace(
     go.Scatter(
         x=x_labels,
@@ -626,10 +568,6 @@ fig.add_trace(
     )
 )
 
-
-# ------------------------------------------------------------
-# DARK PLOTLY LAYOUT
-# ------------------------------------------------------------
 
 fig.update_layout(
 
@@ -695,10 +633,7 @@ st.plotly_chart(
     config={"displayModeBar": False},
 )
 
-
-# ============================================================
 # MODEL BREAKDOWN
-# ============================================================
 
 with st.expander("Model breakdown (CatBoost vs Neural Net)"):
 
@@ -713,10 +648,7 @@ with st.expander("Model breakdown (CatBoost vs Neural Net)"):
             f"Ensemble change: `{result['predicted_change']:+.2f}`"
         )
 
-
-# ============================================================
 # HAZARD ALERT
-# ============================================================
 
 max_forecast = max(y_values)
 
@@ -748,11 +680,7 @@ else:
         unsafe_allow_html=True,
     )
 
-
-# ============================================================
 # SHAP EXPLAINABILITY
-# ============================================================
-
 st.markdown(
     '<div class="section-title">'
     '🔍 What\'s driving the 24h prediction?'
@@ -781,10 +709,7 @@ shap_df = pd.DataFrame(
     ascending=True,
 ).tail(10)
 
-
-# ------------------------------------------------------------
 # SHAP FIGURE
-# ------------------------------------------------------------
 
 fig_shap = go.Figure(
     go.Bar(

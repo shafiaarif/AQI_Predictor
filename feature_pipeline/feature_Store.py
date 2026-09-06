@@ -1,25 +1,3 @@
-"""
-feature_store.py
-
-Uploads the engineered feature dataset to the Hopsworks Feature Store.
-
-AUTH:
-Instead of a hardcoded local cert folder path (which only works on your
-Windows machine), this uses an API key from an environment variable, so it
-works both locally and inside GitHub Actions.
-
-Local setup:
-    1. Get your API key from the Hopsworks UI (Account Settings -> API Keys)
-    2. Create a .env file in your project root with:
-           HOPSWORKS_API_KEY=your_key_here
-           HOPSWORKS_PROJECT=your_project_name
-    3. pip install python-dotenv hopsworks
-
-GitHub Actions setup:
-    Add HOPSWORKS_API_KEY and HOPSWORKS_PROJECT as repo secrets, then pass
-    them as env vars to this step in your workflow yaml.
-"""
-
 import os
 import pandas as pd
 import hopsworks
@@ -28,25 +6,16 @@ try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    # dotenv is optional locally; in CI the env vars are injected directly
     pass
 
-
-# __file__-based paths so this works no matter which directory you run it
-# from (matches feature_engineering.py's path resolution).
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 FEATURE_FILE = os.path.join(PROJECT_ROOT, "data", "processed", "karachi_features_v3.csv")
 
 FEATURE_GROUP_NAME = "karachi_aqi_features"
-FEATURE_GROUP_VERSION = 10 # bumped: V4 feature set (188 features, incl. 36 forecast-lead
-                          # weather columns added on top of the prior V3 schema) has a
-                          # different schema and must not overwrite the old version.
+FEATURE_GROUP_VERSION = 10 
 
-
-# ==================================================
 # 1. LOAD PROCESSED FEATURE DATASET
-# ==================================================
 
 print("\n" + "=" * 60)
 print("LOADING FEATURE DATASET")
@@ -65,10 +34,7 @@ print("Dataset loaded successfully!")
 print("Shape:", df.shape)
 print("Time dtype:", df["time"].dtype)
 
-
-# ==================================================
 # 2. CHECK TARGET COLUMNS
-# ==================================================
 
 target_columns = ["target_aqi_24", "target_aqi_48", "target_aqi_72"]
 
@@ -79,10 +45,7 @@ if missing_targets:
 
 print("\nAll target columns found successfully!")
 
-
-# ==================================================
 # 3. BASIC DATA VALIDATION
-# ==================================================
 
 print("\n" + "=" * 60)
 print("DATA VALIDATION")
@@ -107,10 +70,7 @@ if df["time"].duplicated().sum() != 0:
 
 print("Data validation passed!")
 
-
-# ==================================================
 # 4. CONNECT TO HOPSWORKS
-# ==================================================
 
 print("\n" + "=" * 60)
 print("CONNECTING TO HOPSWORKS")
@@ -136,18 +96,12 @@ project = hopsworks.login(
 print("Connected to Hopsworks!")
 print("Project:", project.name)
 
-
-# ==================================================
 # 5. GET FEATURE STORE
-# ==================================================
 
 fs = project.get_feature_store()
 print("Feature Store accessed successfully!")
 
-
-# ==================================================
 # 6. CREATE / GET FEATURE GROUP
-# ==================================================
 
 print("\n" + "=" * 60)
 print("CREATING FEATURE GROUP")
@@ -157,9 +111,6 @@ feature_group = fs.get_or_create_feature_group(
     name=FEATURE_GROUP_NAME,
     version=FEATURE_GROUP_VERSION,
     description=(
-        # NOTE: Hopsworks caps feature-group descriptions at 256 characters
-        # (a longer one raises errorCode 270092 / HTTP 400 on insert) — keep
-        # this short if you ever edit it.
         "Hourly Karachi AQI features V4: lags, rolling stats, "
         "trend/deviation, same-hour history, pollutant ratios, weather "
         "interactions, wind components, plus 36 forecast-lead weather "
@@ -175,10 +126,7 @@ print("Feature Group created/accessed successfully!")
 print("Feature Group:", feature_group.name)
 print("Version:", feature_group.version)
 
-
-# ==================================================
 # 7. INSERT DATA
-# ==================================================
 
 print("\n" + "=" * 60)
 print("INSERTING DATA")
@@ -189,10 +137,7 @@ feature_group.insert(df)
 print("\nData inserted successfully!")
 print("Rows inserted:", len(df))
 
-
-# ==================================================
 # 8. FINAL SUMMARY
-# ==================================================
 
 print("\n" + "=" * 60)
 print("FEATURE STORE SETUP COMPLETED")

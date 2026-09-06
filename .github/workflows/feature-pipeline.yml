@@ -2,8 +2,8 @@ name: Feature Pipeline
 
 on:
   schedule:
-    - cron: "0 * * * *"    # har ghante chalega
-  workflow_dispatch:        # manual "Run workflow" button ke liye bhi
+    - cron: "0 * * * *"    
+  workflow_dispatch:        
 
 jobs:
   run-feature-pipeline:

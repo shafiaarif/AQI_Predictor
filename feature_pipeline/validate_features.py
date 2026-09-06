@@ -1,20 +1,8 @@
-"""
-validate_features.py (V3)
-
-Validates data/processed/karachi_features_v3.csv against everything the
-current V3 feature_engineering.py produces, plus timestamp-accurate
-correctness checks for lags/targets against the raw dataset.
-"""
-
 import os
 import pandas as pd
 import numpy as np
 from pathlib import Path
 
-# Use the same __file__-based path resolution as feature_engineering.py so
-# this script works regardless of the current working directory it's run
-# from (e.g. running it from inside feature_pipeline/ still finds the
-# project-root-level data/ folder).
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
@@ -67,10 +55,6 @@ EXPECTED_RATIO_COLUMNS = [
 
 EXPECTED_WIND_COLUMNS = ["wind_direction_sin", "wind_direction_cos"]
 
-
-# ============================================================
-# HELPERS
-# ============================================================
 
 def print_section(title):
     print("\n" + "=" * 70)
@@ -128,10 +112,7 @@ def validate_time_based_feature(feature_df, raw_series, feature_column, hours, d
 
     return compare_values(feature_df[feature_column], expected, feature_column)
 
-
-# ============================================================
 # START
-# ============================================================
 
 print("=" * 70)
 print("AQI FEATURE DATASET V3 VALIDATION")
@@ -162,10 +143,7 @@ print("Raw dataset    :", raw.shape, "|", raw["time"].min(), "→", raw["time"].
 
 raw_aqi = raw.drop_duplicates("time").set_index("time")["us_aqi"]
 
-
-# ============================================================
 # [3]-[5] CORE / WEATHER / TIME COLUMNS
-# ============================================================
 
 print_section("[3] CHECKING CORE COLUMNS")
 core_ok = check_columns(df, EXPECTED_CORE_COLUMNS, "core")
@@ -192,10 +170,7 @@ if time_ok:
         if not passed:
             time_feature_values_ok = False
 
-
-# ============================================================
 # [6] BASIC DATA VALIDATION
-# ============================================================
 
 print_section("[6] BASIC DATA VALIDATION")
 
@@ -210,20 +185,10 @@ print(f"Duplicate timestamps: {duplicates} -> {'PASS' if duplicates_ok else 'FAI
 chronological = df["time"].is_monotonic_increasing
 print(f"Chronological order: {chronological} -> {'PASS' if chronological else 'FAIL'}")
 
-
-# ============================================================
 # [7] HOURLY CONTINUITY
-# ============================================================
 
 print_section("[7] CHECKING HOURLY CONTINUITY")
 
-# A tiny number of missing hours is expected in real-world data: the source
-# API occasionally returns a null reading for one field at one hour, which
-# causes dropna() to remove that single row (not because anything is
-# computed incorrectly — lags/rolling/targets were already computed on the
-# full continuous raw series before dropna ran). We only treat this as a
-# real FAIL if it affects more than HOURLY_GAP_TOLERANCE_PCT of all rows;
-# below that it's just informational.
 HOURLY_GAP_TOLERANCE_PCT = 0.5  # percent of total rows
 
 time_diff = df["time"].diff().dropna()
@@ -257,9 +222,7 @@ else:
     print(f"\nFAIL: {non_hourly_pct:.3f}% > {HOURLY_GAP_TOLERANCE_PCT}% tolerance — investigate raw data quality.")
 
 
-# ============================================================
 # [8] NUMERIC FEATURES
-# ============================================================
 
 print_section("[8] CHECKING NUMERIC FEATURES")
 
@@ -267,11 +230,7 @@ non_numeric = [c for c in df.columns if c != "time" and not pd.api.types.is_nume
 numeric_ok = len(non_numeric) == 0
 print("PASS: all non-time columns numeric" if numeric_ok else f"FAIL: non-numeric columns: {non_numeric}")
 
-
-# ============================================================
 # [9]-[10] AQI / POLLUTANT VALUE SANITY
-# ============================================================
-
 print_section("[9] CHECKING AQI VALUES")
 
 aqi_ok = True
@@ -298,10 +257,7 @@ for pollutant in POLLUTANTS:
     if negative != 0:
         pollutant_ok = False
 
-
-# ============================================================
 # [11]-[12] TARGET COLUMNS
-# ============================================================
 
 print_section("[11] CHECKING TARGET COLUMNS")
 targets_ok = check_columns(df, TARGETS, "AQI target")
@@ -309,10 +265,7 @@ targets_ok = check_columns(df, TARGETS, "AQI target")
 print_section("[12] CHECKING CHANGE TARGET COLUMNS")
 change_targets_ok = check_columns(df, CHANGE_TARGETS, "AQI change target")
 
-
-# ============================================================
 # [13] FEATURE GROUP PRESENCE
-# ============================================================
 
 print_section("[13] CHECKING FEATURE GROUPS")
 
@@ -352,10 +305,7 @@ for group_name, columns in feature_groups.items():
         print(f"FAIL: {group_name} (missing {len(missing)}: {missing[:3]}{'...' if len(missing) > 3 else ''})")
         all_groups_ok = False
 
-
-# ============================================================
 # [14] LAG VALUE CORRECTNESS
-# ============================================================
 
 print_section("[14] VALIDATING AQI LAG VALUES")
 
@@ -369,10 +319,7 @@ for hours in LAG_HOURS:
     if not validate_time_based_feature(df, raw_aqi, col, hours, "lag"):
         lag_values_ok = False
 
-
-# ============================================================
 # [15] TARGET VALUE CORRECTNESS
-# ============================================================
 
 print_section("[15] VALIDATING FUTURE AQI TARGETS")
 
@@ -386,10 +333,7 @@ for hours in [24, 48, 72]:
     if not validate_time_based_feature(df, raw_aqi, col, hours, "future"):
         target_values_ok = False
 
-
-# ============================================================
 # [16] CHANGE TARGET CORRECTNESS
-# ============================================================
 
 print_section("[16] VALIDATING AQI CHANGE TARGETS")
 
@@ -414,10 +358,7 @@ for hours in [24, 48, 72]:
     if not compare_values(df[col], expected, col):
         change_values_ok = False
 
-
-# ============================================================
-# [17] TARGET LEAKAGE CHECK (mirrors feature_engineering.py's own check)
-# ============================================================
+# [17] TARGET LEAKAGE CHECK 
 
 print_section("[17] CHECKING FOR TARGET LEAKAGE IN FEATURE LIST")
 
@@ -439,10 +380,7 @@ try:
 except Exception as e:
     print(f"SKIPPED: could not check feature list ({e})")
 
-
-# ============================================================
 # [18] TARGET COVERAGE
-# ============================================================
 
 print_section("[18] CHECKING TARGET COVERAGE")
 
@@ -457,10 +395,7 @@ for hours in [24, 48, 72]:
     if status == "FAIL":
         coverage_ok = False
 
-
-# ============================================================
 # [19] INFINITE VALUES
-# ============================================================
 
 print_section("[19] CHECKING INFINITE VALUES")
 
@@ -469,10 +404,7 @@ inf_count = np.isinf(numeric_df.to_numpy()).sum()
 inf_ok = inf_count == 0
 print(f"Infinite values: {inf_count} -> {'PASS' if inf_ok else 'FAIL'}")
 
-
-# ============================================================
 # [20] TARGET STATISTICS
-# ============================================================
 
 print_section("[20] TARGET STATISTICS")
 
@@ -481,10 +413,7 @@ for target in TARGETS + CHANGE_TARGETS:
     print(f"  Mean: {df[target].mean():.2f} | Std: {df[target].std():.2f} "
           f"| Min: {df[target].min():.2f} | Max: {df[target].max():.2f}")
 
-
-# ============================================================
 # FINAL VALIDATION
-# ============================================================
 
 print("\n" + "=" * 70)
 print("FINAL V3 VALIDATION SUMMARY")

@@ -1,69 +1,3 @@
-"""
-feature_selection.py
-============================================================
-
-Karachi AQI Forecasting - Multi-Feature-Set Selection
-
-PURPOSE
--------
-This script automatically generates 5 different feature sets so that
-we can later compare model performance with different numbers of
-selected features.
-
-PIPELINE
---------
-1. Load engineered feature dataset.
-2. Exclude target columns and time.
-3. Use only the training-like portion of the data.
-   - Last 90 days are excluded.
-   - This prevents validation/test leakage during feature selection.
-4. Correlation pruning:
-   - If two features have correlation > 0.95,
-     keep the more relevant feature.
-5. Random Forest importance:
-   - Train one RF per AQI change horizon.
-   - Select TOP_N features for each horizon.
-6. Union the selected features across 24h/48h/72h.
-7. Generate 5 feature-set JSON files.
-
-FEATURE-SET TARGETS
--------------------
-TOP_N_VALUES = [50, 70, 90, 110, 130]
-
-IMPORTANT
----------
-TOP_N is applied PER HORIZON.
-
-Because features are unioned across:
-    24h + 48h + 72h
-
-the final number of features will usually be larger than TOP_N.
-
-OUTPUT
-------
-data/processed/feature_selection_sets/
-
-    feature_columns_selected_50.json
-    feature_columns_selected_70.json
-    feature_columns_selected_90.json
-    feature_columns_selected_110.json
-    feature_columns_selected_130.json
-
-Also creates:
-
-    feature_selection_summary.json
-
-The existing:
-    feature_columns_selected.json
-
-is NOT overwritten by default.
-
-This protects your current 91-feature experiment.
-
-Run:
-    python feature_selection.py
-"""
-
 import os
 import json
 import numpy as np
@@ -71,10 +5,7 @@ import pandas as pd
 
 from sklearn.ensemble import RandomForestRegressor
 
-
-# ============================================================
 # CONFIGURATION
-# ============================================================
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
@@ -127,25 +58,14 @@ RF_MIN_SAMPLES_LEAF = 4
 RANDOM_STATE = 42
 
 # Exclude last 90 days from feature selection
-# This corresponds to:
-#     VAL_DAYS = 30
-#     TEST_DAYS = 60
 SELECTION_EXCLUSION_DAYS = 90
-
-
-# ============================================================
-# HELPER
-# ============================================================
 
 def print_section(title):
     print("\n" + "=" * 75)
     print(title)
     print("=" * 75)
 
-
-# ============================================================
 # 1. LOAD DATA
-# ============================================================
 
 print_section("[1] LOADING FEATURE DATASET")
 
@@ -173,10 +93,7 @@ print(f"Rows         : {len(df)}")
 print(f"Columns      : {len(df.columns)}")
 print(f"Date range   : {df['time'].min()} → {df['time'].max()}")
 
-
-# ============================================================
 # 2. CHECK REQUIRED TARGETS
-# ============================================================
 
 required_columns = (
     TARGET_COLUMNS
@@ -194,10 +111,7 @@ if missing_columns:
         f"Missing required columns:\n{missing_columns}"
     )
 
-
-# ============================================================
 # 3. CANDIDATE FEATURES
-# ============================================================
 
 print_section("[2] PREPARING CANDIDATE FEATURES")
 
@@ -223,10 +137,7 @@ print(
     excluded_columns
 )
 
-
-# ============================================================
 # 4. TRAINING-LIKE DATA ONLY
-# ============================================================
 
 print_section("[3] CREATING LEAKAGE-SAFE SELECTION DATA")
 
@@ -262,10 +173,7 @@ if len(selection_df) < 1000:
         "Too few rows available for feature selection."
     )
 
-
-# ============================================================
 # 5. HANDLE NUMERIC FEATURES
-# ============================================================
 
 print_section("[4] VALIDATING FEATURE TYPES")
 
@@ -303,10 +211,7 @@ print(
 )
 
 
-# ============================================================
 # 6. CORRELATION PRUNING
-# ============================================================
-
 print_section("[5] CORRELATION PRUNING")
 
 X = selection_df[candidate_features].copy()
@@ -319,17 +224,7 @@ corr_matrix = X.corr().abs()
 
 print("Correlation matrix ready.")
 
-
-# ------------------------------------------------------------
 # Relevance score
-# ------------------------------------------------------------
-#
-# We use average absolute correlation with the three
-# CHANGE targets as a quick relevance measure.
-#
-# This is NOT the final importance ranking.
-# The Random Forest ranking comes later.
-#
 
 avg_change_target = (
     selection_df[CHANGE_TARGET_COLUMNS]
@@ -352,9 +247,7 @@ ordered_features = (
 )
 
 
-# ------------------------------------------------------------
 # Keep one feature from highly-correlated groups
-# ------------------------------------------------------------
 
 kept_features = []
 dropped_features = []
@@ -403,10 +296,7 @@ print(
     f"{len(dropped_features)}"
 )
 
-
-# ------------------------------------------------------------
 # Show examples
-# ------------------------------------------------------------
 
 if dropped_features:
 
@@ -421,10 +311,7 @@ if dropped_features:
             f"  ({dropped_reason[feature]})"
         )
 
-
-# ============================================================
 # 7. RANDOM FOREST IMPORTANCE
-# ============================================================
 
 print_section(
     "[6] RANDOM FOREST FEATURE IMPORTANCE"
@@ -490,10 +377,7 @@ for change_col in CHANGE_TARGET_COLUMNS:
             f"{importance:.6f}"
         )
 
-
-# ============================================================
 # 8. GENERATE FIVE FEATURE SETS
-# ============================================================
 
 print_section(
     "[7] GENERATING FIVE FEATURE SETS"
@@ -518,10 +402,6 @@ for top_n in TOP_N_VALUES:
     print("-" * 75)
 
     selected_per_horizon = {}
-
-    # --------------------------------------------------------
-    # Select top N independently for each horizon
-    # --------------------------------------------------------
 
     for change_col in CHANGE_TARGET_COLUMNS:
 
@@ -626,10 +506,7 @@ for top_n in TOP_N_VALUES:
         f"{other_count}"
     )
 
-
-    # ========================================================
     # Save JSON
-    # ========================================================
 
     output_file = os.path.join(
         OUTPUT_DIR,
@@ -652,11 +529,6 @@ for top_n in TOP_N_VALUES:
         f"\nSaved:"
         f"\n{output_file}"
     )
-
-
-    # ========================================================
-    # Save metadata
-    # ========================================================
 
     feature_set_summary[
         str(top_n)
@@ -693,9 +565,7 @@ for top_n in TOP_N_VALUES:
     }
 
 
-# ============================================================
 # 9. SAVE SUMMARY
-# ============================================================
 
 print_section(
     "[8] SAVING FEATURE SELECTION SUMMARY"
@@ -760,10 +630,7 @@ print(
 )
 
 
-# ============================================================
 # 10. FINAL SUMMARY TABLE
-# ============================================================
-
 print_section(
     "[9] FINAL FEATURE SET SUMMARY"
 )

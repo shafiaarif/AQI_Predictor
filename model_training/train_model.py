@@ -1,54 +1,3 @@
-"""
-train_model.py (V5 - MULTI FEATURE SET EXPERIMENT)
-
-Automatically compares 5 feature sets:
-
-    FS50  -> feature_columns_selected_50.json
-    FS70  -> feature_columns_selected_70.json
-    FS90  -> feature_columns_selected_90.json
-    FS110 -> feature_columns_selected_110.json
-    FS130 -> feature_columns_selected_130.json
-
-For EACH feature set, trains:
-
-    1. Persistence Baseline
-    2. Random Forest
-    3. Ridge Regression
-    4. XGBoost
-    5. CatBoost
-    6. Neural Network
-    7. CatBoost + Neural Network Ensemble
-
-Targets:
-
-    target_change_24
-    target_change_48
-    target_change_72
-
-Absolute AQI reconstruction:
-
-    predicted_aqi = current_us_aqi + predicted_change
-
-IMPORTANT:
-    Test data is used ONLY for final evaluation.
-    Feature selection was already performed using data before
-    the final 90-day period.
-
-OUTPUT:
-
-    saved_models/
-        fs_50/
-        fs_70/
-        fs_90/
-        fs_110/
-        fs_130/
-
-    data/processed/
-        multi_feature_set_results.json
-        multi_feature_set_results.csv
-        best_model.json
-"""
-
 import os
 import json
 import warnings
@@ -82,11 +31,6 @@ except ImportError:
 
 warnings.filterwarnings("ignore")
 
-
-# ============================================================
-# PATHS
-# ============================================================
-
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
@@ -108,10 +52,7 @@ MODEL_DIR = os.path.join(
     "saved_models"
 )
 
-
-# ============================================================
 # CONFIGURATION
-# ============================================================
 
 FEATURE_GROUP_NAME = "karachi_aqi_features"
 FEATURE_GROUP_VERSION = 10
@@ -151,10 +92,7 @@ RANDOM_STATE = 42
 CAT_WEIGHT = 0.50
 NN_WEIGHT = 0.50
 
-
-# ============================================================
 # UTILITY
-# ============================================================
 
 def print_section(title):
 
@@ -162,10 +100,7 @@ def print_section(title):
     print(title)
     print("=" * 75)
 
-
-# ============================================================
 # 1. CONNECT TO HOPSWORKS
-# ============================================================
 
 print_section("[1] CONNECTING TO HOPSWORKS")
 
@@ -192,10 +127,7 @@ fs = project.get_feature_store()
 print("Connected to Hopsworks!")
 print("Project:", project.name)
 
-
-# ============================================================
 # 2. LOAD FEATURE DATA
-# ============================================================
 
 print_section("[2] LOADING FEATURE DATA")
 
@@ -226,10 +158,7 @@ print(
     df["time"].max()
 )
 
-
-# ============================================================
 # 3. VALIDATE REQUIRED COLUMNS
-# ============================================================
 
 print_section("[3] VALIDATING DATA")
 
@@ -253,10 +182,7 @@ if missing_columns:
 
 print("All required columns are present.")
 
-
-# ============================================================
 # 4. TIME-BASED SPLIT
-# ============================================================
 
 print_section(
     "[4] TIME-BASED TRAIN / VALIDATION / TEST SPLIT"
@@ -345,10 +271,7 @@ if len(test_df) < 72:
         "Test set has fewer than 72 rows."
     )
 
-
-# ============================================================
 # 5. EVALUATION FUNCTION
-# ============================================================
 
 def evaluate_reconstructed(
     current_aqi,
@@ -389,10 +312,7 @@ def evaluate_reconstructed(
         "r2": float(r2),
     }
 
-
-# ============================================================
 # 6. MODEL SUMMARY
-# ============================================================
 
 def summarize_model(
     model_name,
@@ -458,10 +378,7 @@ def summarize_model(
         "mean_r2": mean_r2,
     }
 
-
-# ============================================================
 # 7. FEATURE SET LOADING
-# ============================================================
 
 def load_feature_set(feature_set_size):
 
@@ -558,10 +475,6 @@ def train_feature_set(
         len(feature_columns)
     )
 
-    # --------------------------------------------------------
-    # Create X / Y
-    # --------------------------------------------------------
-
     X_train = train_df[
         feature_columns
     ]
@@ -610,9 +523,7 @@ def train_feature_set(
         TARGET_COLUMNS
     ]
 
-    # --------------------------------------------------------
     # Scaling
-    # --------------------------------------------------------
 
     scaler = StandardScaler()
 
@@ -628,10 +539,6 @@ def train_feature_set(
         X_test
     )
 
-    # --------------------------------------------------------
-    # Model storage
-    # --------------------------------------------------------
-
     trained_models = {}
 
     results = []
@@ -646,9 +553,7 @@ def train_feature_set(
         exist_ok=True
     )
 
-    # ========================================================
     # PERSISTENCE BASELINE
-    # ========================================================
 
     print_section(
         f"{feature_set_name} - PERSISTENCE BASELINE"
@@ -683,10 +588,7 @@ def train_feature_set(
         baseline_result
     )
 
-    # ========================================================
     # RANDOM FOREST
-    # ========================================================
-
     print_section(
         f"{feature_set_name} - RANDOM FOREST"
     )
@@ -733,10 +635,6 @@ def train_feature_set(
             f"{HORIZON_LABELS[change_col]}..."
         )
 
-        # IMPORTANT:
-        # Tune only on TRAIN.
-        # Validation remains untouched for this stage.
-
         tscv = TimeSeriesSplit(
             n_splits=3
         )
@@ -767,9 +665,6 @@ def train_feature_set(
         )
 
         best_model = search.best_estimator_
-
-        # Final RF is refit on TRAIN + VAL
-        # using selected hyperparameters.
 
         X_trainval = pd.concat(
             [
@@ -832,9 +727,7 @@ def train_feature_set(
         rf_result
     )
 
-    # ========================================================
     # RIDGE
-    # ========================================================
 
     print_section(
         f"{feature_set_name} - RIDGE"
@@ -921,9 +814,7 @@ def train_feature_set(
         ridge_result
     )
 
-    # ========================================================
     # XGBOOST
-    # ========================================================
 
     print_section(
         f"{feature_set_name} - XGBOOST"
@@ -970,9 +861,7 @@ def train_feature_set(
         best_params = None
         best_iteration = 1000
 
-        # ----------------------------------------------------
         # Tune on TRAIN -> evaluate on VAL
-        # ----------------------------------------------------
 
         for params in xgb_param_grid:
 
@@ -1069,9 +958,7 @@ def train_feature_set(
             best_iteration
         )
 
-        # ----------------------------------------------------
         # Refit TRAIN + VAL
-        # ----------------------------------------------------
 
         X_trainval = pd.concat(
             [
@@ -1155,9 +1042,7 @@ def train_feature_set(
         xgb_result
     )
 
-    # ========================================================
     # CATBOOST
-    # ========================================================
 
     print_section(
         f"{feature_set_name} - CATBOOST"
@@ -1201,10 +1086,7 @@ def train_feature_set(
         best_params = None
         best_iteration = 1000
 
-        # ----------------------------------------------------
         # Tune using TRAIN -> VAL
-        # ----------------------------------------------------
-
         for params in cat_param_grid:
 
             model = CatBoostRegressor(
@@ -1294,9 +1176,7 @@ def train_feature_set(
             best_iteration
         )
 
-        # ----------------------------------------------------
         # Refit TRAIN + VAL
-        # ----------------------------------------------------
 
         X_trainval = pd.concat(
             [
@@ -1511,9 +1391,7 @@ def train_feature_set(
         nn_result
     )
 
-    # ========================================================
     # ENSEMBLE
-    # ========================================================
 
     print_section(
         f"{feature_set_name} - CATBOOST + NN ENSEMBLE"
@@ -1651,9 +1529,7 @@ def train_feature_set(
                 )
             )
 
-    # --------------------------------------------------------
     # Save NN
-    # --------------------------------------------------------
 
     nn_dir = os.path.join(
         feature_model_dir,
@@ -1680,10 +1556,7 @@ def train_feature_set(
         )
     )
 
-    # --------------------------------------------------------
     # Save feature list
-    # --------------------------------------------------------
-
     with open(
         os.path.join(
             feature_model_dir,
@@ -1698,9 +1571,7 @@ def train_feature_set(
             indent=2
         )
 
-    # --------------------------------------------------------
     # Save ensemble config
-    # --------------------------------------------------------
 
     ensemble_config = {
 
@@ -1759,11 +1630,7 @@ def train_feature_set(
 
     return results
 
-
-# ============================================================
 # 9. RUN ALL FIVE FEATURE SETS
-# ============================================================
-
 print_section(
     "[5] RUNNING FIVE FEATURE SET EXPERIMENT"
 )
@@ -1818,10 +1685,7 @@ for feature_set_size in FEATURE_SET_SIZES:
         results
     )
 
-
-# ============================================================
 # 10. FINAL COMPARISON
-# ============================================================
 
 print_section(
     "[6] COMPLETE MODEL COMPARISON"
@@ -1849,10 +1713,7 @@ for result in all_results:
         f"{result['mean_r2']:>10.4f}"
     )
 
-
-# ============================================================
 # 11. BEST OVERALL MODEL
-# ============================================================
 
 best_model = min(
     all_results,
@@ -1901,10 +1762,7 @@ for horizon, metrics in best_model[
         f"R²={metrics['r2']:.4f}"
     )
 
-
-# ============================================================
 # 12. BEST MODEL FOR EACH FEATURE SET
-# ============================================================
 
 print_section(
     "[8] BEST MODEL FOR EACH FEATURE SET"
@@ -1941,11 +1799,7 @@ for feature_set_size in FEATURE_SET_SIZES:
         f"R²={best['mean_r2']:.4f}"
     )
 
-
-# ============================================================
 # 13. BEST MODEL BY HORIZON
-# ============================================================
-
 print_section(
     "[9] BEST MODEL BY FORECAST HORIZON"
 )
@@ -1993,10 +1847,7 @@ for horizon in CHANGE_TARGET_COLUMNS:
         f"R²={best_horizon['r2']:.4f}"
     )
 
-
-# ============================================================
 # 14. SAVE RESULTS JSON
-# ============================================================
 
 print_section(
     "[10] SAVING RESULTS"
@@ -2075,11 +1926,7 @@ print(
     results_json_path
 )
 
-
-# ============================================================
 # 15. SAVE RESULTS CSV
-# ============================================================
-
 csv_rows = []
 
 for result in all_results:
@@ -2150,10 +1997,7 @@ print(
     results_csv_path
 )
 
-
-# ============================================================
 # 16. SAVE BEST MODEL INFORMATION
-# ============================================================
 
 best_model_path = os.path.join(
     RESULTS_DIR,
@@ -2218,10 +2062,7 @@ print(
     best_model_path
 )
 
-
-# ============================================================
 # 17. FINAL SUMMARY
-# ============================================================
 
 print_section(
     "[11] TRAINING COMPLETE"

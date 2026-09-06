@@ -1,41 +1,12 @@
-"""
-preprocess.py
-
-Cleans the raw Karachi AQI + weather dataset before feature engineering.
-
-Steps:
-- loads karachi_raw.csv
-- parses timestamps safely
-- checks data types
-- checks missing values
-- removes full-row duplicates
-- removes duplicate timestamps
-- sorts data chronologically
-- saves karachi_processed.csv
-
-Important:
-Missing values are reported but NOT removed here.
-Feature engineering will handle NaNs created by lag/rolling features.
-"""
-
-
 import pandas as pd
 import os
 
 
-# ============================================================
 # PROJECT PATHS
-# ============================================================
-
-# Current directory:
-# Air_Quality_Index_Predictor/Feature Pipeline/
 
 CURRENT_DIR = os.path.dirname(
     os.path.abspath(__file__)
 )
-
-# Project root:
-# Air_Quality_Index_Predictor/
 
 PROJECT_ROOT = os.path.dirname(
     CURRENT_DIR
@@ -49,10 +20,7 @@ RAW_DIR = os.path.join(
 )
 
 # Input file
-# NOTE: must match the exact filename fetch_data.py saves
-# (lowercase "karachi_raw.csv") — Linux filesystems are
-# case-sensitive, so a mismatch here causes FileNotFoundError
-# even when the file actually exists.
+
 RAW_FILE = os.path.join(
     RAW_DIR,
     "karachi_raw.csv"
@@ -63,11 +31,6 @@ PROCESSED_FILE = os.path.join(
     RAW_DIR,
     "karachi_processed.csv"
 )
-
-
-# ============================================================
-# MAIN
-# ============================================================
 
 def main():
 
@@ -84,10 +47,6 @@ def main():
     print("\nProcessed file:")
     print(PROCESSED_FILE)
 
-    # ========================================================
-    # CHECK RAW FILE
-    # ========================================================
-
     if not os.path.exists(RAW_FILE):
 
         raise FileNotFoundError(
@@ -97,9 +56,7 @@ def main():
             f"{RAW_DIR}"
         )
 
-    # ========================================================
     # LOAD RAW DATA
-    # ========================================================
 
     df = pd.read_csv(
         RAW_FILE
@@ -127,9 +84,7 @@ def main():
         list(df.columns)
     )
 
-    # ========================================================
     # CHECK TIME COLUMN
-    # ========================================================
 
     if "time" not in df.columns:
 
@@ -137,9 +92,7 @@ def main():
             "The raw dataset does not contain a 'time' column."
         )
 
-    # ========================================================
     # PARSE TIME
-    # ========================================================
 
     print("\nParsing timestamps...")
 
@@ -149,9 +102,7 @@ def main():
         errors="coerce"
     )
 
-    # ========================================================
     # CHECK INVALID TIMESTAMPS
-    # ========================================================
 
     invalid_times = (
         df["time"]
@@ -175,9 +126,7 @@ def main():
             subset=["time"]
         )
 
-    # ========================================================
     # DATA TYPES
-    # ========================================================
 
     print("\n" + "=" * 60)
     print("DATA TYPES")
@@ -187,9 +136,7 @@ def main():
         df.dtypes
     )
 
-    # ========================================================
     # MISSING VALUES
-    # ========================================================
 
     print("\n" + "=" * 60)
     print("MISSING VALUES")
@@ -210,9 +157,7 @@ def main():
         total_missing
     )
 
-    # ========================================================
     # FULL ROW DUPLICATES
-    # ========================================================
 
     full_dupes = (
         df.duplicated()
@@ -233,10 +178,7 @@ def main():
             full_dupes
         )
 
-    # ========================================================
     # DUPLICATE TIMESTAMPS
-    # ========================================================
-
     time_dupes = (
         df["time"]
         .duplicated()
@@ -260,9 +202,7 @@ def main():
             time_dupes
         )
 
-    # ========================================================
     # SORT CHRONOLOGICALLY
-    # ========================================================
 
     df = (
         df
@@ -274,10 +214,7 @@ def main():
         )
     )
 
-    # ========================================================
     # CHECK HOURLY CONTINUITY
-    # ========================================================
-
     print("\n" + "=" * 60)
     print("TIME SERIES CHECK")
     print("=" * 60)
@@ -317,9 +254,7 @@ def main():
                 "Hourly continuity: PASS"
             )
 
-    # ========================================================
     # FINAL DATASET INFORMATION
-    # ========================================================
 
     print("\n" + "=" * 60)
     print("FINAL DATASET")
@@ -355,27 +290,19 @@ def main():
         df.isnull().sum().sum()
     )
 
-    # ========================================================
     # CREATE OUTPUT DIRECTORY
-    # ========================================================
 
     os.makedirs(
         RAW_DIR,
         exist_ok=True
     )
 
-    # ========================================================
     # SAVE PROCESSED DATASET
-    # ========================================================
 
     df.to_csv(
         PROCESSED_FILE,
         index=False
     )
-
-    # ========================================================
-    # SUCCESS
-    # ========================================================
 
     print("\n" + "=" * 60)
     print("PREPROCESSING COMPLETE")
@@ -399,11 +326,6 @@ def main():
     )
 
     print("=" * 60)
-
-
-# ============================================================
-# RUN
-# ============================================================
 
 if __name__ == "__main__":
     main()

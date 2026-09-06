@@ -1,112 +1,10 @@
-"""
-feature_engineering.py (V4 - FORECAST-LEAD FEATURES ADDED)
-
-Karachi AQI Forecasting Feature Engineering Pipeline
-
-INPUT:
-    data/raw_dataset/karachi_processed.csv
-
-OUTPUT:
-    data/processed/karachi_features_v3.csv
-    data/processed/feature_columns_v3.json
-
-MAIN TARGETS (all three are trained on — see train_model.py):
-    target_aqi_24
-    target_aqi_48
-    target_aqi_72
-
-AUXILIARY TARGETS (kept in the dataset for analysis, NEVER used as inputs):
-    target_change_24
-    target_change_48
-    target_change_72
-
-============================================================
-NEW IN V4: FORECAST-LEAD WEATHER FEATURES
-============================================================
-Previously, every input feature only used information from time t or
-earlier (lags, rolling stats, etc.). This meant the model had to predict
-AQI 24h/48h/72h ahead with ZERO knowledge of what the weather would
-actually be doing during that window — despite wind, rain, and humidity
-being the dominant physical drivers of pollutant dispersion.
-
-This version adds "forecast-lead" features: the ACTUAL weather value at
-t+24h, t+48h, and t+72h, built with a negative shift (df[col].shift(-h))
-on the historical weather columns.
-
-WHY THIS IS NOT LEAKAGE:
-At real-time inference, this exact information is available from the
-Open-Meteo FORECAST API (already used in fetch_data.py's
-FORECAST_WEATHER_URL) — a 16-day rolling weather forecast is public and
-known in advance. During TRAINING, we don't have live forecast API calls
-for 2024-2026 history, so we substitute the historical ACTUAL weather
-that occurred at t+h as a stand-in for "what the forecast would have
-said" (forecasts for short lead times like 24-72h are typically close to
-the eventual actual value for this kind of data). This is standard
-practice for training forecast-driven pipelines offline. The important
-distinction: unlike target_aqi_* (which is derived from us_aqi — the
-quantity we're trying to predict), forecast-lead weather columns are an
-INDEPENDENT input signal (wind/rain/pressure), not a disguised copy of
-the label, so using them as features is legitimate.
-
-At inference time (predict.py / the dashboard), these forecast_* columns
-must be populated from a LIVE call to the Open-Meteo forecast endpoint,
-not from historical data (which won't exist yet for future timestamps).
-
-IMPORTANT:
-    - All model input features use information available at time t or earlier
-      OR information about the future that is knowable in advance via a
-      weather forecast API (the new forecast_* columns below).
-    - No future AQI is used as an input feature.
-    - Future AQI is ONLY stored in target columns.
-    - target_* columns MUST NOT be used as model input (verified in [22]).
-
-PERFORMANCE NOTE (fix from the previous version):
-    Instead of inserting ~150 new columns into `df` one at a time
-    (df["new_col"] = ...), which pandas has to re-consolidate memory for on
-    every single assignment and which triggers "DataFrame is highly
-    fragmented" warnings, every new feature is first written into a plain
-    Python dict (`new_columns`). All new columns are then attached to `df`
-    in ONE pd.concat call. Same output, much faster, no warnings.
-
-============================================================
-FIXES IN THIS VERSION (post-preprocess.py run)
-============================================================
-Running preprocess.py's output through the original script surfaced two
-real problems that would have crashed the pipeline or silently destroyed
-the dataset:
-
-1. HOURLY CONTINUITY: the raw feed had 1 non-hourly gap. The original
-   script hard-raised on any gap, stopping the pipeline dead. This
-   version instead reindexes the dataframe onto a complete hourly
-   DatetimeIndex first, inserting a NaN row for any missing hour. The
-   continuity check then legitimately passes, and the single inserted
-   NaN row is removed later at the normal dropna() cleaning step — same
-   place every other NaN-causing row (from lags/targets) already gets
-   removed, so no special-casing is needed downstream.
-
-2. UNUSED, MOSTLY-NULL RAW COLUMNS (e.g. "visibility"): the raw dataset
-   carries columns that are never referenced by REQUIRED_COLUMNS or
-   FORECAST_LEAD_COLUMNS, but they still rode along in `df` all the way
-   to the final blanket df.dropna() call. When such a column is almost
-   entirely NaN (as "visibility" was — ~99.8% missing), that one
-   dropna() call wipes out almost every row in the dataset, silently
-   shrinking tens of thousands of rows down to a couple hundred with NO
-   warning or error. This version now restricts `df` to REQUIRED_COLUMNS
-   only right after the required-columns check, so any such dead-weight
-   column is dropped before it can contaminate the final dataset.
-"""
-
-
 import os
 import json
 import pandas as pd
 import numpy as np
 
 
-# ============================================================
 # 1. PROJECT PATHS
-# ============================================================
-
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 
@@ -118,10 +16,7 @@ OUTPUT_FILE = os.path.join(PROCESSED_DIR, "karachi_features_v3.csv")
 FEATURE_LIST_FILE = os.path.join(PROCESSED_DIR, "feature_columns_v3.json")
 
 
-# ============================================================
 # 2. CONFIGURATION
-# ============================================================
-
 LAG_HOURS = [1, 3, 6, 12, 24, 48, 72, 96, 120, 168, 336, 504]
 ROLLING_WINDOWS = [6, 12, 24, 48, 72, 168]
 CHANGE_WINDOWS = [1, 3, 6, 12, 24, 48, 72]
@@ -130,13 +25,7 @@ TREND_WINDOWS = [6, 12, 24, 48, 72, 168]
 DEVIATION_WINDOWS = [24, 48, 72, 168]   # must be a subset of ROLLING_WINDOWS
 TARGET_HOURS = [24, 48, 72]
 
-# NEW (V4): which weather/pollutant columns get a forward-looking
-# "forecast-lead" feature, and at which horizons. These are the columns
-# that physically drive pollutant dispersion (wind disperses/concentrates
-# pollutants, rain washes them out, humidity/pressure affect chemistry),
-# and — critically — are all available from a real weather forecast API at
-# inference time (unlike AQI itself, which open-meteo doesn't forecast for
-# us the way we need).
+
 FORECAST_LEAD_HOURS = [24, 48, 72]
 FORECAST_LEAD_COLUMNS = [
     "temperature_2m",
@@ -149,9 +38,8 @@ FORECAST_LEAD_COLUMNS = [
 ]
 
 
-# ============================================================
+
 # 3. REQUIRED INPUT COLUMNS
-# ============================================================
 
 REQUIRED_COLUMNS = [
     "time", "us_aqi",
@@ -162,11 +50,6 @@ REQUIRED_COLUMNS = [
     "sulphur_dioxide", "ozone", "european_aqi",
 ]
 
-
-# ============================================================
-# 4. START
-# ============================================================
-
 print("\n" + "=" * 70)
 print("KARACHI AQI FEATURE ENGINEERING V4 (forecast-lead features added)")
 print("=" * 70)
@@ -174,20 +57,13 @@ print("\nInput file :", INPUT_FILE)
 print("Output file:", OUTPUT_FILE)
 
 
-# ============================================================
-# 5. CHECK INPUT FILE
-# ============================================================
-
 if not os.path.exists(INPUT_FILE):
     raise FileNotFoundError(
         f"\n\nProcessed dataset NOT FOUND!\nExpected file:\n{INPUT_FILE}\n\n"
         "Run preprocess.py first."
     )
 
-
-# ============================================================
 # 6. LOAD DATA
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[1] LOADING PREPROCESSED DATASET")
@@ -199,9 +75,7 @@ print("Rows   :", len(df))
 print("Columns:", len(df.columns))
 
 
-# ============================================================
 # 7. CHECK REQUIRED COLUMNS
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[2] CHECKING REQUIRED COLUMNS")
@@ -228,18 +102,6 @@ if missing_forecast_source_columns:
 
 print("All required columns found.")
 
-# --------------------------------------------------------------
-# FIX #2: drop any raw column not in REQUIRED_COLUMNS.
-#
-# The raw feed can carry extra columns (e.g. "visibility") that are
-# never used by REQUIRED_COLUMNS or FORECAST_LEAD_COLUMNS. If such a
-# column is left in `df`, it survives all the way to the final blanket
-# df.dropna() call. When that column is mostly NaN (visibility was
-# ~99.8% missing in this dataset), that single dropna() wipes out
-# almost every row with no warning. Restricting to REQUIRED_COLUMNS
-# here — before any feature engineering — prevents that.
-# --------------------------------------------------------------
-
 extra_columns = [c for c in df.columns if c not in REQUIRED_COLUMNS]
 
 if extra_columns:
@@ -252,9 +114,7 @@ if extra_columns:
 print("\nColumns kept for feature engineering:", len(df.columns))
 
 
-# ============================================================
 # 8. PARSE TIMESTAMP & SORT
-# ============================================================
 
 print("\nParsing timestamps...")
 
@@ -270,11 +130,6 @@ df = df.sort_values("time").reset_index(drop=True)
 print("Start:", df["time"].min())
 print("End  :", df["time"].max())
 
-
-# ============================================================
-# 9. DUPLICATE TIMESTAMP CHECK
-# ============================================================
-
 print("\n" + "=" * 70)
 print("[3] CHECKING DUPLICATE TIMESTAMPS")
 print("=" * 70)
@@ -287,10 +142,7 @@ if duplicate_count > 0:
 
 print("Duplicate check: PASS")
 
-
-# ============================================================
-# 10. HOURLY CONTINUITY CHECK (with auto-fill)
-# ============================================================
+# 10. HOURLY CONTINUITY CHECK 
 
 print("\n" + "=" * 70)
 print("[4] CHECKING HOURLY CONTINUITY")
@@ -301,14 +153,6 @@ non_hourly = (time_diff != pd.Timedelta(hours=1))
 non_hourly_count = int(non_hourly.sum())
 
 print("Non-hourly intervals:", non_hourly_count)
-
-# --------------------------------------------------------------
-# FIX #1: instead of hard-raising on any gap, reindex onto a complete
-# hourly range. Missing hours become NaN rows, which are removed later
-# by the normal dropna() cleaning step (step 28/[19]) — the same place
-# lag/target NaNs already get removed — so no special handling is
-# needed further down the pipeline.
-# --------------------------------------------------------------
 
 if non_hourly_count > 0:
     problematic_indices = np.where(non_hourly.values)[0] + 1
@@ -424,9 +268,7 @@ new_columns.update({
 print("Time features created:", 15)
 
 
-# ============================================================
 # 13. AQI LAG FEATURES
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[7] CREATING AQI LAG FEATURES")
@@ -438,9 +280,7 @@ for lag in LAG_HOURS:
 print("Created", len(LAG_HOURS), "AQI lag features.")
 
 
-# ============================================================
 # 14. ROLLING AQI STATISTICS
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[8] CREATING ROLLING AQI FEATURES")
@@ -462,10 +302,7 @@ for window in ROLLING_WINDOWS:
 
 print("Rolling statistics created for", len(ROLLING_WINDOWS), "windows.")
 
-
-# ============================================================
 # 15. AQI CHANGE + PERCENTAGE-CHANGE FEATURES
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[9] CREATING AQI CHANGE FEATURES")
@@ -482,10 +319,7 @@ for window in PCT_CHANGE_WINDOWS:
         (df["us_aqi"] - previous_aqi) / previous_aqi.replace(0, np.nan)
     ) * 100
 
-
-# ============================================================
 # 16. AQI TREND FEATURES
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[10] CREATING AQI TREND FEATURES")
@@ -500,9 +334,7 @@ for window in DEVIATION_WINDOWS:
     new_columns[f"aqi_deviation_from_mean_{window}"] = df["us_aqi"] - rolling_means[window]
 
 
-# ============================================================
 # 17. SAME-HOUR HISTORICAL FEATURES
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[11] CREATING SAME-HOUR HISTORICAL FEATURES")
@@ -517,9 +349,7 @@ new_columns["aqi_same_hour_min_7d"] = daily_lag_df.min(axis=1)
 new_columns["aqi_same_hour_max_7d"] = daily_lag_df.max(axis=1)
 
 
-# ============================================================
 # 18. POLLUTANT RATIO + COMPOSITION FEATURES
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[12] CREATING POLLUTANT RATIO FEATURES")
@@ -537,9 +367,7 @@ new_columns["no2_o3_ratio"] = df["nitrogen_dioxide"] / df["ozone"].replace(0, np
 new_columns["pm25_fraction"] = df["pm2_5"] / pm_total.replace(0, np.nan)
 
 
-# ============================================================
 # 19. WEATHER-POLLUTANT INTERACTIONS
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[13] CREATING WEATHER-POLLUTANT INTERACTIONS")
@@ -553,9 +381,7 @@ new_columns["temperature_pm25_interaction"] = df["temperature_2m"] * df["pm2_5"]
 new_columns["wind_pm10_interaction"] = df["wind_speed_10m"] * df["pm10"]
 
 
-# ============================================================
 # 20. WEATHER / POLLUTANT CHANGE FEATURES
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[14] CREATING WEATHER/POLLUTANT TREND FEATURES")
@@ -574,15 +400,6 @@ for column in change_columns:
 print(f"Created {len(change_columns) * 4} weather/pollutant change features.")
 
 
-# ============================================================
-# 20B. NEW (V4): FORECAST-LEAD WEATHER FEATURES
-# ============================================================
-# These are the ACTUAL future weather values at t+24h, t+48h, t+72h,
-# standing in for what a live weather-forecast API would report at
-# inference time. See the module docstring for why this is legitimate and
-# NOT the same kind of leakage as using future AQI.
-#
-# forecast_<column>_<hours>  =  value of <column> at time (t + hours)
 
 print("\n" + "=" * 70)
 print("[14B] CREATING FORECAST-LEAD WEATHER FEATURES (NEW IN V4)")
@@ -617,9 +434,7 @@ for hours in FORECAST_LEAD_HOURS:
 print(f"Created {3 * len(FORECAST_LEAD_HOURS)} forecast-lead change/cumulative features.")
 
 
-# ============================================================
 # 21. WIND DIRECTION COMPONENTS
-# ============================================================
 
 print("\nCreating wind direction components...")
 
@@ -634,9 +449,7 @@ for hours in FORECAST_LEAD_HOURS:
     new_columns[f"forecast_wind_direction_cos_{hours}"] = np.cos(2 * np.pi * future_wind_direction / 360)
 
 
-# ============================================================
 # 22. ATTACH ALL ENGINEERED FEATURES IN ONE CONCAT
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[15] ATTACHING ENGINEERED FEATURES (single concat — no fragmentation)")
@@ -649,10 +462,7 @@ print("Total engineered feature columns added:", len(new_columns))
 print("DataFrame shape after attaching features:", df.shape)
 
 
-# ============================================================
 # 23. FUTURE TARGETS
-# ============================================================
-
 print("\n" + "=" * 70)
 print("[16] CREATING FUTURE TARGETS")
 print("=" * 70)
@@ -673,10 +483,7 @@ for column in TARGET_COLUMNS:
     print(" -", column)
 
 
-# ============================================================
 # 24. TARGET ALIGNMENT VERIFICATION
-# ============================================================
-
 print("\n" + "=" * 70)
 print("[17] VERIFYING TARGET ALIGNMENT")
 print("=" * 70)
@@ -707,14 +514,6 @@ if alignment_failed:
 
 print("\nAll AQI target alignment checks: PASS")
 
-
-# ============================================================
-# 24B. NEW (V4): FORECAST-LEAD FEATURE ALIGNMENT VERIFICATION
-# ============================================================
-# Same idea as target alignment above, but for the new forecast_* columns:
-# forecast_<col>_<h> at row time t must equal the raw <col> value at time
-# t + h. This guarantees the shift(-h) was applied correctly and that no
-# accidental off-by-one or timezone issue crept in.
 
 print("\n" + "=" * 70)
 print("[17B] VERIFYING FORECAST-LEAD FEATURE ALIGNMENT")
@@ -774,9 +573,7 @@ for hours in TARGET_HOURS:
     print(f"{target_change_column}: PASS")
 
 
-# ============================================================
-# 26. CHECK MISSING VALUES (pre-cleaning report)
-# ============================================================
+# 26. CHECK MISSING VALUES 
 
 print("\n" + "=" * 70)
 print("[18] CHECKING MISSING VALUES")
@@ -791,10 +588,7 @@ if len(missing_report) > 0:
 else:
     print("No missing values.")
 
-
-# ============================================================
 # 27. CHECK INFINITE VALUES
-# ============================================================
 
 print("\nChecking infinite values...")
 
@@ -807,11 +601,7 @@ if infinite_count > 0:
     df = df.replace([np.inf, -np.inf], np.nan)
     print("Infinite values converted to NaN.")
 
-
-# ============================================================
 # 28. DROP NaN ROWS
-# ============================================================
-
 print("\n" + "=" * 70)
 print("[19] CLEANING DATASET")
 print("=" * 70)
@@ -861,10 +651,7 @@ if after_drop < 500:
         "Consider backfilling more history."
     )
 
-
-# ============================================================
 # 29. FINAL TARGET VALIDATION
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[20] FINAL TARGET VALIDATION")
@@ -876,10 +663,7 @@ for target in TARGET_COLUMNS:
     if not target_valid:
         raise ValueError(f"{target} contains NaN values.")
 
-
-# ============================================================
 # 30. FINAL DATA QUALITY CHECK
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[21] FINAL DATA QUALITY CHECK")
@@ -904,19 +688,12 @@ if final_infinite != 0:
     raise ValueError("Final dataset contains infinite values.")
 
 
-# ============================================================
 # 31. IDENTIFY MODEL FEATURES
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[22] IDENTIFYING MODEL FEATURES")
 print("=" * 70)
 
-# IMPORTANT: these columns contain future information about AQI itself (the
-# label) and MUST NOT be given to the model as input. Note that forecast_*
-# columns are intentionally NOT excluded here — they carry future WEATHER
-# information (not AQI), which is legitimately knowable in advance via a
-# forecast API, and are the whole point of this V4 update.
 EXCLUDED_FROM_FEATURES = ["time"] + TARGET_COLUMNS
 
 FEATURE_COLUMNS = [c for c in df.columns if c not in EXCLUDED_FROM_FEATURES]
@@ -931,11 +708,7 @@ print("\nExcluded columns:")
 for c in EXCLUDED_FROM_FEATURES:
     print(" -", c)
 
-
-# ============================================================
 # 32. SAFETY CHECK FOR TARGET LEAKAGE
-# ============================================================
-
 print("\n" + "=" * 70)
 print("[23] TARGET LEAKAGE CHECK")
 print("=" * 70)
@@ -950,9 +723,6 @@ if len(leakage_columns) > 0:
 print("Target leakage check: PASS")
 print("No future target columns are present in FEATURE_COLUMNS.")
 
-# NEW (V4): explicitly confirm forecast_* columns never touch us_aqi /
-# european_aqi — they should be built purely from weather columns, never
-# from AQI, since AQI itself is not available from a forecast API.
 suspicious_forecast_columns = [
     c for c in FEATURE_COLUMNS
     if c.startswith("forecast_") and ("aqi" in c.lower())
@@ -965,10 +735,7 @@ if suspicious_forecast_columns:
     )
 print("Forecast-lead AQI-leakage check: PASS (no forecast_* column derived from AQI).")
 
-
-# ============================================================
 # 33. SAVE FEATURE DATASET + FEATURE LIST
-# ============================================================
 
 print("\n" + "=" * 70)
 print("[24] SAVING FEATURE DATASET")
@@ -982,10 +749,7 @@ with open(FEATURE_LIST_FILE, "w") as f:
     json.dump(FEATURE_COLUMNS, f, indent=4)
 print("Feature list saved to:", FEATURE_LIST_FILE)
 
-
-# ============================================================
 # 34. FINAL SUMMARY
-# ============================================================
 
 print("\n" + "=" * 70)
 print("FEATURE ENGINEERING V4 COMPLETED SUCCESSFULLY")
@@ -1006,38 +770,3 @@ sample_columns = [
     "target_aqi_24", "target_aqi_48", "target_aqi_72",
 ]
 print(df[sample_columns].head())
-
-
-# ============================================================
-# 35. NEXT STEPS
-# ============================================================
-
-print("\n" + "=" * 70)
-print("NEXT STEPS")
-print("=" * 70)
-print(
-    """
-1. Run validate_features.py to verify the V4 dataset (note: it will need a
-   small update to also validate the new forecast_* columns — ask if you
-   want that script updated too).
-2. Upload karachi_features_v3.csv to Hopsworks as a NEW Feature Group
-   version (bump FEATURE_GROUP_VERSION in feature_store.py, e.g. 6 -> 7,
-   since the schema changed: new forecast_* columns were added).
-3. Recreate the Feature View for the new version in feature_view.py (bump
-   FEATURE_GROUP_VERSION and FEATURE_VIEW_VERSION to match) — still
-   excluding target_change_* from the query.
-4. Update train_model.py's FEATURE_GROUP_VERSION to match, then re-run —
-   it trains SEPARATE models per horizon for all three targets.
-5. IMPORTANT: whatever builds real-time predictions (predict.py / the
-   dashboard) must populate forecast_* columns from a LIVE call to
-   fetch_current_window() / the Open-Meteo forecast API — NOT from
-   historical data, which won't exist yet for future timestamps.
-6. Compare Random Forest / Ridge / XGBoost / CatBoost / Neural Network
-   using RMSE, MAE and R² per horizon — expect the biggest gains at 48h
-   and especially 72h, since those horizons benefited least from the
-   change-target fix and most from finally knowing future weather.
-"""
-)
-print("=" * 70)
-print("READY FOR HOPSWORKS FEATURE STORE")
-print("=" * 70)

@@ -1,57 +1,12 @@
-"""
-fetch_data.py
-
-Karachi Air Quality + Weather Data Fetcher
-
-This script:
-
-1. Fetches historical weather + air quality data when manually enabled.
-2. Fetches the current rolling forecast window.
-3. Appends new data to the existing raw dataset.
-4. Removes duplicate timestamps.
-5. Sorts data chronologically.
-6. Handles different timestamp formats safely.
-7. Uses an absolute project-root-based file path so it works
-   regardless of the current terminal directory.
-
-Dataset:
-    data/raw_dataset/karachi_raw.csv
-
-IMPORTANT:
-    - Historical backfill should normally be run ONCE.
-    - After the initial backfill, keep the backfill section commented.
-    - The normal script fetches the current rolling window.
-
-NOTE (this version):
-    The historical backfill section below is UNCOMMENTED and set to fetch
-    3 years of data (2023-08-28 -> 2026-08-28). Run this ONCE to build your
-    initial raw dataset, then RE-COMMENT the backfill call again before you
-    go back to normal hourly/current-window runs -- otherwise every run
-    will re-fetch 3 years of history unnecessarily (slow + wasteful, though
-    save_raw_dataset()'s dedup logic will still keep the file correct).
-"""
-
-
 import os
 import requests
 import pandas as pd
 
 
-# ============================================================
-# PROJECT PATHS
-# ============================================================
-
-# Location of this file:
-# Air_Quality_Index_Predictor/
-# └── Feature Pipeline/
-#     └── fetch_data.py
-
 CURRENT_DIR = os.path.dirname(
     os.path.abspath(__file__)
 )
 
-# Move one level up:
-# Feature Pipeline -> Air_Quality_Index_Predictor
 
 PROJECT_ROOT = os.path.dirname(
     CURRENT_DIR
@@ -71,17 +26,12 @@ RAW_FILE = os.path.join(
 )
 
 
-# ============================================================
 # LOCATION
-# ============================================================
 
 LATITUDE = 24.8607
 LONGITUDE = 67.0011
 
-
-# ============================================================
 # WEATHER VARIABLES
-# ============================================================
 
 WEATHER_HOURLY_VARS = (
     "temperature_2m,"
@@ -96,10 +46,7 @@ WEATHER_HOURLY_VARS = (
     "dew_point_2m"
 )
 
-
-# ============================================================
 # AIR QUALITY VARIABLES
-# ============================================================
 
 AQ_HOURLY_VARS = (
     "pm10,"
@@ -112,10 +59,7 @@ AQ_HOURLY_VARS = (
     "us_aqi"
 )
 
-
-# ============================================================
 # FORECAST WEATHER API
-# ============================================================
 
 FORECAST_WEATHER_URL = (
     "https://api.open-meteo.com/v1/forecast?"
@@ -126,10 +70,7 @@ FORECAST_WEATHER_URL = (
     "&past_days=92"
 )
 
-# ============================================================
 # FORECAST AIR QUALITY API
-# ============================================================
-
 FORECAST_AQ_URL = (
     "https://air-quality-api.open-meteo.com/v1/air-quality?"
     f"latitude={LATITUDE}"
@@ -139,10 +80,7 @@ FORECAST_AQ_URL = (
     "&past_days=92" 
 )
 
-
-# ============================================================
 # GENERIC API FETCH FUNCTION
-# ============================================================
 
 def fetch_json(url, label):
     """
@@ -168,10 +106,6 @@ def fetch_json(url, label):
 
         return None
 
-    # --------------------------------------------------------
-    # Successful response
-    # --------------------------------------------------------
-
     if response.status_code == 200:
 
         print(
@@ -179,10 +113,6 @@ def fetch_json(url, label):
         )
 
         return response.json()
-
-    # --------------------------------------------------------
-    # Failed response
-    # --------------------------------------------------------
 
     print(
         f"ERROR: {label} fetch failed "
@@ -196,9 +126,7 @@ def fetch_json(url, label):
     return None
 
 
-# ============================================================
 # CURRENT / ROLLING WINDOW
-# ============================================================
 
 def fetch_current_window():
     """
@@ -208,28 +136,20 @@ def fetch_current_window():
         Merged pandas DataFrame
         None if fetching fails
     """
-
-    # --------------------------------------------------------
     # Fetch weather
-    # --------------------------------------------------------
-
     weather_data = fetch_json(
         FORECAST_WEATHER_URL,
         "Weather data"
     )
 
-    # --------------------------------------------------------
     # Fetch air quality
-    # --------------------------------------------------------
 
     air_quality_data = fetch_json(
         FORECAST_AQ_URL,
         "Air quality data"
     )
 
-    # --------------------------------------------------------
     # Check API responses
-    # --------------------------------------------------------
 
     if weather_data is None:
 
@@ -247,9 +167,7 @@ def fetch_current_window():
 
         return None
 
-    # --------------------------------------------------------
     # Check hourly key
-    # --------------------------------------------------------
 
     if "hourly" not in weather_data:
 
@@ -269,9 +187,7 @@ def fetch_current_window():
 
         return None
 
-    # --------------------------------------------------------
     # Convert API response to DataFrames
-    # --------------------------------------------------------
 
     weather_df = pd.DataFrame(
         weather_data["hourly"]
@@ -281,9 +197,7 @@ def fetch_current_window():
         air_quality_data["hourly"]
     )
 
-    # --------------------------------------------------------
     # Merge weather + air quality
-    # --------------------------------------------------------
 
     merged_df = pd.merge(
         weather_df,
@@ -292,9 +206,7 @@ def fetch_current_window():
         on="time"
     )
 
-    # --------------------------------------------------------
     # Convert timestamp safely
-    # --------------------------------------------------------
 
     merged_df["time"] = pd.to_datetime(
         merged_df["time"],
@@ -302,17 +214,13 @@ def fetch_current_window():
         errors="coerce"
     )
 
-    # --------------------------------------------------------
     # Remove invalid timestamps
-    # --------------------------------------------------------
 
     merged_df = merged_df.dropna(
         subset=["time"]
     )
 
-    # --------------------------------------------------------
     # Sort
-    # --------------------------------------------------------
 
     merged_df = (
         merged_df
@@ -336,33 +244,12 @@ def fetch_current_window():
 
     return merged_df
 
-
-# ============================================================
 # HISTORICAL BACKFILL
-# ============================================================
 
 def fetch_historical_data(
     start_date,
     end_date
 ):
-    """
-    Fetch historical weather + air quality data.
-
-    Example:
-
-        fetch_historical_data(
-            "2025-06-01",
-            "2026-08-25"
-        )
-
-    Dates must use:
-
-        YYYY-MM-DD
-    """
-
-    # --------------------------------------------------------
-    # Historical weather URL
-    # --------------------------------------------------------
 
     weather_url = (
         "https://archive-api.open-meteo.com/v1/archive?"
@@ -374,10 +261,6 @@ def fetch_historical_data(
         "&timezone=auto"
     )
 
-    # --------------------------------------------------------
-    # Historical air quality URL
-    # --------------------------------------------------------
-
     aq_url = (
         "https://air-quality-api.open-meteo.com/v1/air-quality?"
         f"latitude={LATITUDE}"
@@ -388,27 +271,19 @@ def fetch_historical_data(
         "&timezone=auto"
     )
 
-    # --------------------------------------------------------
     # Fetch weather
-    # --------------------------------------------------------
 
     weather_data = fetch_json(
         weather_url,
         "Historical weather data"
     )
 
-    # --------------------------------------------------------
     # Fetch AQ
-    # --------------------------------------------------------
 
     air_quality_data = fetch_json(
         aq_url,
         "Historical air quality data"
     )
-
-    # --------------------------------------------------------
-    # Check responses
-    # --------------------------------------------------------
 
     if weather_data is None:
 
@@ -426,9 +301,7 @@ def fetch_historical_data(
 
         return None
 
-    # --------------------------------------------------------
     # Check hourly data
-    # --------------------------------------------------------
 
     if "hourly" not in weather_data:
 
@@ -448,9 +321,7 @@ def fetch_historical_data(
 
         return None
 
-    # --------------------------------------------------------
     # Convert to DataFrames
-    # --------------------------------------------------------
 
     weather_df = pd.DataFrame(
         weather_data["hourly"]
@@ -460,10 +331,6 @@ def fetch_historical_data(
         air_quality_data["hourly"]
     )
 
-    # --------------------------------------------------------
-    # Merge
-    # --------------------------------------------------------
-
     merged_df = pd.merge(
         weather_df,
         air_quality_df,
@@ -471,9 +338,7 @@ def fetch_historical_data(
         on="time"
     )
 
-    # --------------------------------------------------------
     # Convert timestamps
-    # --------------------------------------------------------
 
     merged_df["time"] = pd.to_datetime(
         merged_df["time"],
@@ -481,17 +346,13 @@ def fetch_historical_data(
         errors="coerce"
     )
 
-    # --------------------------------------------------------
     # Remove invalid timestamps
-    # --------------------------------------------------------
 
     merged_df = merged_df.dropna(
         subset=["time"]
     )
 
-    # --------------------------------------------------------
     # Sort
-    # --------------------------------------------------------
 
     merged_df = (
         merged_df
@@ -515,37 +376,10 @@ def fetch_historical_data(
 
     return merged_df
 
-
-# ============================================================
 # SAVE RAW DATASET
-# ============================================================
-
 def save_raw_dataset(new_df):
-    """
-    Append new data to existing dataset.
-
-    Operations:
-
-        Existing CSV
-              +
-        New data
-              ↓
-        Combine
-              ↓
-        Convert timestamps
-              ↓
-        Remove invalid timestamps
-              ↓
-        Remove duplicate timestamps
-              ↓
-        Sort chronologically
-              ↓
-        Save CSV
-    """
-
-    # --------------------------------------------------------
+    
     # Check input
-    # --------------------------------------------------------
 
     if new_df is None:
 
@@ -563,18 +397,14 @@ def save_raw_dataset(new_df):
 
         return
 
-    # --------------------------------------------------------
     # Create directory
-    # --------------------------------------------------------
 
     os.makedirs(
         RAW_DIR,
         exist_ok=True
     )
 
-    # --------------------------------------------------------
     # Load existing dataset
-    # --------------------------------------------------------
 
     if os.path.exists(RAW_FILE):
 
@@ -616,27 +446,13 @@ def save_raw_dataset(new_df):
 
         combined_df = new_df.copy()
 
-    # --------------------------------------------------------
-    # Convert timestamps safely
-    #
-    # Handles:
-    #
-    # 2026-08-26T00:00
-    #
-    # and:
-    #
-    # 2026-08-25 23:00:00
-    # --------------------------------------------------------
-
     combined_df["time"] = pd.to_datetime(
         combined_df["time"],
         format="mixed",
         errors="coerce"
     )
 
-    # --------------------------------------------------------
     # Remove invalid timestamps
-    # --------------------------------------------------------
 
     invalid_count = (
         combined_df["time"]
@@ -656,18 +472,13 @@ def save_raw_dataset(new_df):
             subset=["time"]
         )
 
-    # --------------------------------------------------------
     # Count duplicates
-    # --------------------------------------------------------
 
     rows_before_dedup = len(
         combined_df
     )
 
-    # --------------------------------------------------------
     # Remove duplicate timestamps
-    # --------------------------------------------------------
-
     combined_df = combined_df.drop_duplicates(
         subset=["time"],
         keep="last"
@@ -687,9 +498,7 @@ def save_raw_dataset(new_df):
         duplicates_removed
     )
 
-    # --------------------------------------------------------
     # Sort chronologically
-    # --------------------------------------------------------
 
     combined_df = (
         combined_df
@@ -697,10 +506,7 @@ def save_raw_dataset(new_df):
         .reset_index(drop=True)
     )
 
-    # --------------------------------------------------------
     # Save timestamp in standard format
-    # --------------------------------------------------------
-
     combined_df["time"] = (
         combined_df["time"]
         .dt.strftime(
@@ -708,19 +514,13 @@ def save_raw_dataset(new_df):
         )
     )
 
-    # --------------------------------------------------------
     # Save CSV
-    # --------------------------------------------------------
-
     combined_df.to_csv(
         RAW_FILE,
         index=False
     )
 
-    # --------------------------------------------------------
     # Information
-    # --------------------------------------------------------
-
     print("\n" + "=" * 60)
     print("RAW DATASET SAVED SUCCESSFULLY")
     print("=" * 60)
@@ -750,10 +550,6 @@ def save_raw_dataset(new_df):
     print("=" * 60)
 
 
-# ============================================================
-# MAIN
-# ============================================================
-
 if __name__ == "__main__":
 
     print("\n" + "=" * 60)
@@ -770,29 +566,7 @@ if __name__ == "__main__":
         RAW_FILE
     )
 
-    # ========================================================
     # INITIAL HISTORICAL BACKFILL (3 YEARS)
-    # ========================================================
-    #
-    # IMPORTANT:
-    #
-    # This is UNCOMMENTED right now to pull 3 years of history
-    # (2023-08-28 -> 2026-08-28). Run the script ONCE like this.
-    #
-    # Open-Meteo's archive API can be picky about very large single
-    # requests -- if this call errors out or times out, split it into
-    # 1-year chunks instead (call fetch_historical_data() three times
-    # with 2023-08-28->2024-08-28, 2024-08-28->2025-08-28,
-    # 2025-08-28->2026-08-28, calling save_raw_dataset() after each
-    # chunk) and re-run this file three times, or wrap the three calls
-    # in a loop.
-    #
-    # After this backfill run completes successfully, RE-COMMENT this
-    # block again before going back to normal hourly/current-window
-    # runs -- otherwise every future run will re-fetch 3 years of
-    # history unnecessarily.
-    #
-    # ========================================================
 
     # backfill_df = fetch_historical_data(
     #     "2023-08-28",
@@ -805,10 +579,7 @@ if __name__ == "__main__":
     #         backfill_df
     #     )
 
-
-    # ========================================================
     # CURRENT DATA UPDATE
-    # ========================================================
 
     print(
         "\nFetching current weather + AQ data..."

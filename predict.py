@@ -1,32 +1,3 @@
-"""
-predict.py
-----------
-
-Live Karachi AQI features (via live_features.py) se FS70 ensemble
-models se 24h / 48h / 72h AQI predict karta hai.
-
-CHANGED: pehle yeh Hopsworks Feature View se "latest row" fetch karta
-tha — jo hamesha ~72h purana hota hai (training feature group targets
-ke liye dropna() karta hai). Ab yeh live_features.build_live_feature_row()
-use karta hai, jo local history + Open-Meteo ka live forecast merge
-karke asal "abhi" wala row banata hai.
-
-Actual saved model structure:
-
-saved_models/
-└── fs70/
-    ├── catboost/
-    │   ├── target_aqi_24.pkl
-    │   ├── target_aqi_48.pkl
-    │   └── target_aqi_72.pkl
-    │
-    ├── neural_network/
-    │   ├── model.keras
-    │   └── scaler.pkl
-    │
-    └── feature_columns.json
-"""
-
 import os
 import json
 import pickle
@@ -38,10 +9,7 @@ from tensorflow import keras
 
 from live_features import build_live_feature_row
 
-
-# ============================================================
 # CONFIGURATION
-# ============================================================
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -64,10 +32,7 @@ ENSEMBLE_WEIGHTS = {
     "nn": 0.5,
 }
 
-
-# ============================================================
 # CHECK FILES
-# ============================================================
 
 def check_required_files():
     """
@@ -95,10 +60,7 @@ def check_required_files():
 
     print("All required model files found!")
 
-
-# ============================================================
 # LOAD FEATURE COLUMNS
-# ============================================================
 
 def load_feature_columns():
     """
@@ -162,10 +124,7 @@ def get_latest_features(feature_columns):
 
     return row_df, current_aqi
 
-
-# ============================================================
 # LOAD MODELS
-# ============================================================
 
 def load_models():
     """
@@ -228,10 +187,7 @@ def load_models():
 
     return models
 
-
-# ============================================================
 # PREPARE INPUT FEATURES
-# ============================================================
 
 def prepare_features(row_df, feature_columns):
     """
@@ -258,10 +214,7 @@ def prepare_features(row_df, feature_columns):
 
     return X
 
-
-# ============================================================
 # PREDICT
-# ============================================================
 
 def predict_aqi(row_df, current_aqi, models, feature_columns):
     """
@@ -278,10 +231,7 @@ def predict_aqi(row_df, current_aqi, models, feature_columns):
     print(f"Current AQI (us_aqi): {current_aqi:.1f}")
 
     X = prepare_features(row_df, feature_columns)
-
-    # --------------------------------------------------------
-    # CatBoost predictions (these are CHANGE values)
-    # --------------------------------------------------------
+    # CatBoost predictions 
     catboost_predictions = {}
     print("\nCatBoost predictions (change):")
     for horizon in HORIZONS:
@@ -290,9 +240,7 @@ def predict_aqi(row_df, current_aqi, models, feature_columns):
         catboost_predictions[horizon] = prediction
         print(f"  {horizon}: {prediction:.2f}")
 
-    # --------------------------------------------------------
-    # Neural Network prediction (also CHANGE values)
-    # --------------------------------------------------------
+    # Neural Network prediction 
     print("\nNeural Network prediction...")
     scaler = models["scaler"]
     X_scaled = scaler.transform(X)
@@ -321,9 +269,7 @@ def predict_aqi(row_df, current_aqi, models, feature_columns):
     else:
         raise ValueError(f"Unexpected NN output size: {len(nn_prediction)}")
 
-    # --------------------------------------------------------
     # Ensemble change -> ADD to current_aqi -> final AQI
-    # --------------------------------------------------------
     results = {}
     cb_weight = ENSEMBLE_WEIGHTS["catboost"]
     nn_weight = ENSEMBLE_WEIGHTS["nn"]
@@ -351,10 +297,6 @@ def predict_aqi(row_df, current_aqi, models, feature_columns):
     results["current_aqi"] = round(current_aqi, 1)
     return results
 
-
-# ============================================================
-# MAIN
-# ============================================================
 
 if __name__ == "__main__":
 

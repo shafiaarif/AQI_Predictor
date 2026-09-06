@@ -1,50 +1,25 @@
-"""
-register_model.py
-------------------
-FS70 Ensemble (CatBoost + Neural Network) model ko Hopsworks Model Registry
-mein register karta hai.
-
-IMPORTANT: saved_models/fs70/ mein sirf CatBoost + Neural Network nahi hain —
-train_model.py ne Random Forest, Ridge, XGBoost ke models bhi usi folder mein
-save kiye the (5 models per feature set). predict.py sirf CatBoost + NN use
-karta hai, to upload se pehle sirf zaroori files ek clean temp folder mein
-copy kar ke, wahi upload karte hain. Isse:
-  1) upload size bohot kam ho jata hai (40MB+ ki Random Forest file skip)
-  2) large-file upload ke dauran SSL/timeout error ka risk ghat jata hai
-
-Run:
-    python register_model.py
-"""
-
 import os
 import shutil
 import hopsworks
 
-# ---------------------------------------------------------
 # 1. Configuration
-# ---------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SOURCE_DIR = os.path.join(BASE_DIR, "saved_models", "fs70")
 DEPLOY_DIR = os.path.join(BASE_DIR, "saved_models", "fs70_deploy")
 
-# training run se maloom metrics
 METRICS = {
     "rmse": 6.5013,
     "mae": 5.0739,
     "r2": 0.4675,
 }
 
-# Sirf ye files/folders chahiye — baaki (random_forest, ridge, xgboost, etc.)
-# skip ho jayenge.
 REQUIRED_ITEMS = [
     "catboost",
     "neural_network",
     "feature_columns.json",
 ]
 
-# ---------------------------------------------------------
-# 2. Clean deploy folder banao (sirf zaroori files ke saath)
-# ---------------------------------------------------------
+# 2. Clean deploy folder 
 print("=" * 60)
 print("PREPARING CLEAN DEPLOY FOLDER")
 print("=" * 60)
@@ -68,7 +43,7 @@ for item in REQUIRED_ITEMS:
 
     print(f"[COPIED] {item}")
 
-# Total size check (sirf info ke liye)
+# Total size check 
 total_size_mb = sum(
     os.path.getsize(os.path.join(root, f))
     for root, _, files in os.walk(DEPLOY_DIR)
@@ -78,9 +53,7 @@ total_size_mb = sum(
 print(f"\nDeploy folder ready: {DEPLOY_DIR}")
 print(f"Total upload size: {total_size_mb:.2f} MB\n")
 
-# ---------------------------------------------------------
 # 3. Sanity check
-# ---------------------------------------------------------
 REQUIRED_FILES = [
     os.path.join(DEPLOY_DIR, "catboost", "target_aqi_24.pkl"),
     os.path.join(DEPLOY_DIR, "catboost", "target_aqi_48.pkl"),
@@ -102,9 +75,7 @@ for path in REQUIRED_FILES:
 
 print("All required model files found!\n")
 
-# ---------------------------------------------------------
 # 4. Connect to Hopsworks
-# ---------------------------------------------------------
 print("=" * 60)
 print("CONNECTING TO HOPSWORKS")
 print("=" * 60)
@@ -113,9 +84,7 @@ project = hopsworks.login()
 mr = project.get_model_registry()
 print(f"Connected to project: {project.name}\n")
 
-# ---------------------------------------------------------
-# 5. Register model (sirf clean deploy folder upload hoga)
-# ---------------------------------------------------------
+# 5. Register model
 print("=" * 60)
 print("REGISTERING MODEL")
 print("=" * 60)
