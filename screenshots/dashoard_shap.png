@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<!-- saved from url=(0058)https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/ -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no,user-scalable=no">
+    <meta name="theme-color" content="#FFFFFF">
+    <!-- Additional meta tags -->
+
+    <!--
+      We're putting icons here because ReactHelmet doesn't work for favicons.
+      See https://github.com/nfl/react-helmet/issues/430
+    -->
+
+    <!--
+    Following a mix of:
+    - https://medium.com/swlh/are-you-using-svg-favicons-yet-a-guide-for-modern-browsers-836a6aace3df
+    - https://css-tricks.com/svg-favicons-and-all-the-fun-things-we-can-do-with-them/
+    -->
+    
+    <!--
+    Including all these other <link> statements here just so they're all in the same place.
+    Not because we expect someone to Helmet-override them.
+    -->
+    
+    <link rel="mask-icon" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/favicon_safari_mask.png" color="#FF2B2B">
+    <link rel="apple-touch-icon" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/favicon_256.png">
+    <link rel="manifest" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/manifest.json">
+    <!-- Google Tag Manager -->
+    <script type="text/javascript" async="" src="./dashoard_shap_files/heap-269788835.js.download"></script><script type="text/javascript" src="./dashoard_shap_files/commons.59560acdd69ed701c941.js.gz" async="" status="loaded"></script><script type="text/javascript" src="./dashoard_shap_files/heap.dynamic.js.gz" async="" status="loaded"></script><script type="text/javascript" async="" src="./dashoard_shap_files/analytics.js.download"></script><script type="text/javascript" async="" src="./dashoard_shap_files/analytics.min.js.download"></script><script async="" src="./dashoard_shap_files/gtm.js.download"></script><script>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({
+          "gtm.start": new Date().getTime(),
+          event: "gtm.js",
+        });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != "dataLayer" ? "&l=" + l : "";
+        j.async = true;
+        j.src = "https://www.googletagmanager.com/gtm.js?id=" + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, "script", "dataLayer", "GTM-52GRQSL");
+    </script>
+    <!-- End Google Tag Manager -->
+    <!-- Segment -->
+    <script>
+      !(function () {
+        var analytics = (window.analytics = window.analytics || []);
+        if (!analytics.initialize)
+          if (analytics.invoked)
+            window.console && console.error && console.error("Segment snippet included twice.");
+          else {
+            analytics.invoked = !0;
+            analytics.methods = [
+              "trackSubmit",
+              "trackClick",
+              "trackLink",
+              "trackForm",
+              "pageview",
+              "identify",
+              "reset",
+              "group",
+              "track",
+              "ready",
+              "alias",
+              "debug",
+              "page",
+              "once",
+              "off",
+              "on",
+              "addSourceMiddleware",
+              "addIntegrationMiddleware",
+              "setAnonymousId",
+              "addDestinationMiddleware",
+            ];
+            analytics.factory = function (e) {
+              return function () {
+                var t = Array.prototype.slice.call(arguments);
+                t.unshift(e);
+                analytics.push(t);
+                return analytics;
+              };
+            };
+            for (var e = 0; e < analytics.methods.length; e++) {
+              var key = analytics.methods[e];
+              analytics[key] = analytics.factory(key);
+            }
+            analytics.load = function (key, e) {
+              var t = document.createElement("script");
+              t.type = "text/javascript";
+              t.async = !0;
+              t.src = "https://cdn.segment.com/analytics.js/v1/" + key + "/analytics.min.js";
+              var n = document.getElementsByTagName("script")[0];
+              n.parentNode.insertBefore(t, n);
+              analytics._loadOptions = e;
+            };
+            analytics.SNIPPET_VERSION = "4.13.1";
+            analytics.load("GI7vYWHNmWwHbyFjBrvL0jOBA1TpZOXC");
+            // analytics.page()
+          }
+      })();
+    </script>
+    <!-- End Segment -->
+    <script type="module" crossorigin="" src="./dashoard_shap_files/index-BC-kttxJ.js.download"></script>
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/rolldown-runtime-CNC7AqOf.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/jsx-runtime-BtyjnKZj.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/cn-BZAAGw-p.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/routes-Dj3J6O3l.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/schemas-CHGINSGm.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/dist-Cm7Sm5Nr.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/bufferedData-ymD0tp_Q.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/snowflakeOAuth-DW6yOqA7.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/formatDistanceToNow-CswtW086.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/page-CKl-nwE7.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/index.module-Bbot1wPI.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/esm-CXhqkufa.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/errorDetails-BoeL7g8o.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/emoji_u1f626-DA0aHyeW.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/errorPage-BOF8Yn1a.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/error-CbDSkrQ9.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/CarouselOfStreamlitExampleApp-WHt6QRj6.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/SmallDivider-DxbdTQ_K.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/login-BUuYs5sc.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/notFound-lSh9MGIw.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/confirmationModal-O_VZ0bEK.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/toFinite-BHpKH8K_.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/icon_star_outline-Bl7Vx4Ji.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/useUserDetails-gMrKfhP6.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/banner-BXnI7KvA.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/icon_github-CfLfIzZH.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/icon_edit-DHRxkIDl.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/iframe-PlC_b34Z.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/ProfilePagePreview-DIXKjlNM.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/states-i0WuDXvh.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/usePythonVersions-DCqkOJlf.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/appSettings-ZBXpxwka.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/trim-CCYDdBQy.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/popoverMenu-CwRRuACI.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/isEqual-Ee0_QqTj.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/useAppState-Cu1ptq8S.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/queryGithubRepository-DsG2b7Xa.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/streamlitAppContext-BB7rdvC6.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/streamlitAppPage-Clg0MWDe.js">
+    <link rel="modulepreload" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/replayStats-C6TwcZID.js">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/schemas-CNmlmbri.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/snowflakeOAuth-BFITXieI.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/page-C_DbCMlX.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/errorDetails-BDQowOym.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/errorPage-CK-Jpwy3.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/CarouselOfStreamlitExampleApp-2FXfzJGp.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/SmallDivider-BlS60Rb-.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/login-CRVde-_5.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/notFound-BzJWtTwJ.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/confirmationModal-BwNoJBuP.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/icon_star_outline-DH69RDEi.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/banner-D2t2_Ovp.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/ProfilePagePreview-BWWUYPxS.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/states-CItw9V6I.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/usePythonVersions-CBwCrTS9.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/appSettings-jOmLW4LG.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/popoverMenu-D49xGQkE.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/useAppState-SCryp0xD.css">
+    <link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/index-BhV6cvyg.css">
+  <style media=""></style><link rel="modulepreload" as="script" crossorigin="" href="https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/-/build/assets/subdomain-BMj6aYdT.js"><link rel="stylesheet" crossorigin="" href="./dashoard_shap_files/subdomain-CaQ_fr4L.css"><title>Karachi AQI Predictor · Streamlit</title><link id="favicon" rel="icon" href="data:image/svg+xml,&lt;svg xmlns=&#39;http://www.w3.org/2000/svg&#39; viewBox=&#39;0 0 100 100&#39;&gt;&lt;text y=&#39;.9em&#39; font-size=&#39;90&#39;&gt;%F0%9F%8C%AB%EF%B8%8F&lt;/text&gt;&lt;/svg&gt;"><link id="alternate-favicon" rel="alternate icon" href="data:image/svg+xml,&lt;svg xmlns=&#39;http://www.w3.org/2000/svg&#39; viewBox=&#39;0 0 100 100&#39;&gt;&lt;text y=&#39;.9em&#39; font-size=&#39;90&#39;&gt;%F0%9F%8C%AB%EF%B8%8F&lt;/text&gt;&lt;/svg&gt;"></head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"><div class=""><div class="_streamlitAppContainer_aycw8_1"><div class="_stateContainer_aycw8_26"><iframe allow="accelerometer; ambient-light-sensor; autoplay; battery; camera; clipboard-write; document-domain; encrypted-media; fullscreen; geolocation; gyroscope; layout-animations; legacy-image-formats; magnetometer; microphone; midi; oversized-images; payment; picture-in-picture; publickey-credentials-get; sync-xhr; usb; vr ; wake-lock; xr-spatial-tracking" sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads" height="auto" title="streamlitApp" src="./dashoard_shap_files/saved_resource.html" class="_iframe_aycw8_26"></iframe><button class="_terminalButton_rix23_138" data-testid="manage-app-button"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.00016 12L7.41016 10.59L2.83016 6L7.41016 1.41L6.00016 -1.23266e-07L0.000156927 6L6.00016 12Z" fill="white"></path></svg>Manage app</button></div></div></div><div class=""></div></div>
+
+    <!-- Status page embed -->
+    <script src="./dashoard_shap_files/script.js.download"></script><iframe src="./dashoard_shap_files/frame.html" title="Streamlit Cloud Status" aria-hidden="true" tabindex="-1" style="position: fixed; border-width: medium; border-style: none; border-color: currentcolor; border-image: none; box-shadow: rgba(9, 20, 66, 0.25) 0px 20px 32px -8px; z-index: 9999; transition: left 1s, bottom 1s, right 1s; height: 115px; width: 320px; left: -9999px; right: auto; bottom: 60px;"></iframe>
+  
+
+</body></html>

@@ -1,18 +1,29 @@
 # Pearls AQI Predictor
 
-Serverless end-to-end ML pipeline jo aapke city ki Air Quality Index (AQI) agle 3 din
+Serverless end-to-end ML pipeline jo Karachi ki Air Quality Index (AQI) agle 3 din
 (24h / 48h / 72h) ke liye predict karti hai.
+
+🔗 **Live Dashboard:** https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/
+🔗 **GitHub Repo:** https://github.com/shafiaarif/AQI_Predictor
+🔗 **Hopsworks Model Registry:** https://eu-west.cloud.hopsworks.ai/p/41176/models
+
+## Dashboard Preview
+
+![Karachi AQI Predictor dashboard — hero card and 3-day forecast](screenshots/dashboard_overview.png)
+
+![SHAP feature importance for the 24h prediction](screenshots/dashboard_shap.png)
 
 ## Architecture
 
 ```
-[AQICN / OpenWeather API]
+[Open-Meteo Weather + Air Quality API]
         │
         ▼
 feature_pipeline/fetch_data.py          -> raw weather + pollutant data
         │
         ▼
-feature_pipeline/feature_engineering.py -> time-based + derived features (AQI change rate)
+feature_pipeline/feature_engineering.py -> time-based + derived features (lags,
+                                            rolling stats, AQI change rate, etc.)
         │
         ▼
 feature_pipeline/preprocess.py, feature_Selection.py, validate_features.py
@@ -29,23 +40,27 @@ model_training/train_model.py           -> Random Forest, Ridge, XGBoost, CatBoo
 register_model.py                       -> Hopsworks Model Registry
         │
         ▼
-predict.py                              -> batch inference (24h/48h/72h)
+live_features.py                        -> merges local history + live Open-Meteo
+                                            window into a real "right now" feature row
+        │
+        ▼
+predict.py                              -> live inference (24h/48h/72h)
         │
         ▼
 app.py (Streamlit)                      -> live dashboard + SHAP + alerts
 ```
 
-Automation: GitHub Actions (`.github/workflows/`) — feature pipeline hourly,
-training pipeline daily.
+Automation: GitHub Actions (`.github/workflows/`) — feature pipeline runs hourly,
+training pipeline runs weekly (full retraining across 5 feature sets is heavy).
 
 ## Tech Stack
 
 - Python, Scikit-learn, TensorFlow, CatBoost, XGBoost
 - Hopsworks (Feature Store + Model Registry)
 - GitHub Actions (CI/CD)
-- Streamlit (dashboard)
+- Streamlit + Plotly (dashboard)
 - SHAP (explainability)
-- AQICN / OpenWeather API
+- Open-Meteo Weather & Air Quality API
 
 ## Results Summary
 
@@ -84,8 +99,10 @@ streamlit run app.py
 ## Project Structure
 
 ```
-sh_aqi/
+AQI_Predictor/
 ├── data/
+│   └── raw_dataset/
+│       └── karachi_processed.csv       # full local history (used by live_features.py)
 ├── feature_pipeline/
 │   ├── fetch_data.py
 │   ├── feature_engineering.py
@@ -97,10 +114,20 @@ sh_aqi/
 │   └── validate_features.py
 ├── model_training/
 │   └── train_model.py
-├── register_model.py
+├── saved_models/
+│   └── fs70/
+│       ├── catboost/
+│       ├── neural_network/
+│       └── feature_columns.json
+├── live_features.py                    # builds a real "right now" feature row
 ├── predict.py
+├── register_model.py
 ├── app.py
-├── requirements.txt
+├── requirements.txt                    # dashboard deps (Streamlit Cloud)
+├── requirements-pipeline.txt           # feature/training pipeline deps (hopsworks)
+├── runtime.txt
+├── .streamlit/
+│   └── config.toml
 └── .github/workflows/
     ├── feature-pipeline.yml
     └── training-pipeline.yml
@@ -108,5 +135,4 @@ sh_aqi/
 
 ## Live Dashboard
 
-<!-- Streamlit Community Cloud pe deploy karne ke baad yahan link daalo -->
-`https://<your-app>.streamlit.app`
+https://aqipredictor-syjvh7kjnheplxy2w3pxgm.streamlit.app/
